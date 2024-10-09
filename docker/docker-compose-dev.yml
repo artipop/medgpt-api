@@ -1,0 +1,21 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:13.8-bullseye
+    container_name: ${PROJECT_TITLE}-db
+    restart: always
+    env_file: 
+      - .env-example
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ${PROJECT_TITLE}-db:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT}:5432"
+
+volumes:
+  medgpt-api-db:  # here we can't use variable substitution, so we set it obviously :(
+    name: ${PROJECT_TITLE}-db

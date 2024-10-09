@@ -5,6 +5,7 @@ from starlette.middleware.cors import CORSMiddleware
 from settings import settings
 from common.logger import logger
 from auth.router import router as auth_router
+from google_auth.router import router as google_auth_router
 
 
 app = FastAPI(
@@ -20,6 +21,8 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(google_auth_router)
+
 
 
 if __name__ == "__main__":

@@ -34,3 +34,6 @@ archive.zip
 #poetry
 poetry.lock
 .venv
+
+#alembic
+alembic/versions/*
