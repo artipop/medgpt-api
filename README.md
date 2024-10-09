@@ -13,4 +13,4 @@
   - пример см. в `src/google_auth/models/`
 
 
-структура проекта взята [отсюда]("https://github.com/zhanymkanov/fastapi-best-practices")
+структура проекта взята [отсюда](https://github.com/zhanymkanov/fastapi-best-practices)
