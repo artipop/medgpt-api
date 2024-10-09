@@ -1,8 +1,8 @@
 from fastapi import APIRouter
 
 router = APIRouter(
-    prefix="/auth/native",
-    tags=["native auhorization"]
+    prefix="/auth/google",
+    tags=["google authorzsation"]
 )
 
 @router.get("/test_router")
