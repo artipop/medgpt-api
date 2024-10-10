@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     
     google_client_id: str = Field(alias="GOOGLE_CLIENT_ID")
     google_client_secret: str = Field(alias="GOOGLE_CLIENT_SECRET")
+    jwt_signing_key: str = Field(alias="JWT_SIGNING_KEY")
 
     @property
     def db_url(self) -> str:

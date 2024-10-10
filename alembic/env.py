@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../s
 from settings import settings
 from database import Base
 
-from src.google_auth.models import User
+from src.google_auth.models import User, RefreshToken
 
 
 # this is the Alembic Config object, which provides
