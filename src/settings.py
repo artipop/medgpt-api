@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     postgres_host: str = Field(alias="POSTGRES_HOST")
     postgres_port: str = Field(alias="POSTGRES_PORT")
     
+    google_client_id: str = Field(alias="GOOGLE_CLIENT_ID")
+    google_client_secret: str = Field(alias="GOOGLE_CLIENT_SECRET")
+
     @property
     def db_url(self) -> str:
         scheme = "postgresql+asyncpg" 
