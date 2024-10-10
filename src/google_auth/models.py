@@ -10,9 +10,8 @@ from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, D
 from sqlalchemy.dialects.postgresql import BYTEA
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.ext.declarative import declarative_base
-from datetime import datetime
 
-from database import Base
+from database import Base, AbstractRepository
 
 
 class User(Base):
@@ -21,3 +20,6 @@ class User(Base):
     id: Mapped[str] = mapped_column(UUID, primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
 
+
+class UserRepository(AbstractRepository):
+    model =  User
