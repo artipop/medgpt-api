@@ -16,7 +16,7 @@ class StateStorage:
         self.storage.add(state)
 
         jwt_token = jwt.encode(
-            claims={"state": state_storage.produce()}, 
+            claims={"state": state}, 
             key=settings.jwt_signing_key, 
             algorithm=settings.jwt_encoding_algo
         )
