@@ -1,8 +1,6 @@
 import aiohttp
 from uuid import UUID
-from typing import Set
 from fastapi import APIRouter, Depends, HTTPException
-from google_auth.exceptions import StateTokenException
 from fastapi.responses import RedirectResponse
 from jose import jwt
 from sqlalchemy.future import select
@@ -54,15 +52,14 @@ async def delete_user(id: UUID, session=Depends(get_session)):
 
 
 @router.get("/login", response_class=RedirectResponse)
-async def redicrect_to_google_auth():
-    
-    jwt_token = jwt.encode(
-        claims={"state": state_storage.produce()}, 
-        key=settings.jwt_signing_key, 
-        algorithm=settings.jwt_encoding_algo
-    )
-    
-    redirect_url = (
+async def redicrect_to_google_auth() -> str:
+    """
+        produces new state, to avoid csrf,
+        encode it to jwt token,
+        return url to redirect user to google oauth consent screen
+    """
+    jwt_token = state_storage.produce()
+    return (
         f"https://accounts.google.com/o/oauth2/auth?"
         f"response_type=code&"
         f"client_id={settings.google_client_id}&"
@@ -70,8 +67,6 @@ async def redicrect_to_google_auth():
         f"scope=openid%20profile%20email&"
         f"&state={jwt_token}"
     )
-    
-    return redirect_url
 
 
 @router.get("/callback")
@@ -102,6 +97,7 @@ async def auth_callback(
     async with http_session.get(url=settings.google_userinfo_url,
                                 headers=headers) as resp:
         user_info = await resp.json()
+        logger.warning(user_info)
 
     return access_token
 

@@ -14,7 +14,14 @@ class StateStorage:
     def produce(self) -> str:
         state = str(uuid.uuid4())
         self.storage.add(state)
-        return state
+
+        jwt_token = jwt.encode(
+            claims={"state": state_storage.produce()}, 
+            key=settings.jwt_signing_key, 
+            algorithm=settings.jwt_encoding_algo
+        )
+
+        return jwt_token
 
     def validate(self, state: str):
         try:
