@@ -2,7 +2,6 @@ import aiohttp
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
-from jose import jwt
 from sqlalchemy.future import select
 from database import get_session
 from google_auth.models import User, UserRepository
@@ -99,12 +98,24 @@ async def auth_callback(
         user_info = await resp.json()
         logger.warning(user_info)
 
-    return access_token
+    response = RedirectResponse(
+        url="/docs"
+    )
+
+    response.headers.update(
+        {
+            "Set-Cookie": f"Authorization=Bearer {access_token}"
+        }
+    )
+
+    return response
+    # return access_token
 
 
 @router.get("/protected-endpoint-test")
 async def test_auth(token: str = Depends(oauth2_scheme)):
     pprint(token)
     return {
-        "payload": "protected_data"
+        "payload": "protected_data",
+        "token": token
     }

@@ -40,6 +40,7 @@ class StateStorage:
             raise StateTokenException(detail="Couldn't decode state token")        
  
 
+# TODO(weldonfe): rewrite_to_singletone
 class HttpClient:
     def __init__(self):
         self.session = None
