@@ -1,26 +1,28 @@
 import aiohttp
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.future import select
 from database import get_session
 from google_auth.models import User, UserRepository
 from google_auth.schemas import UserCreate, UserDelete, UserUpdate, UserResponse
 from settings import settings
+from jose import jwt
 from common.logger import logger
-from pprint import pprint
-from google_auth.dependencies import (
-    get_http_client,
-    oauth2_scheme, 
-    state_storage,
+from google_auth.dependencies import state_storage
+from google_auth.utils.sequrity_requests import (
+    exchage_code_to_tokens,
+    get_user_info_from_provider,
+    validate_id_token
 )
+from google_auth.utils.http_client import HttpClient
+from google_auth.schemas import UserFromProvider
+from pprint import pprint
 
 router = APIRouter(
     prefix="/google-auth",
     tags=["google authorization"]
 )
-
-http_client = get_http_client()
 
 
 @router.get("/get_all", response_model=list[UserResponse])
@@ -64,58 +66,36 @@ async def redicrect_to_google_auth() -> str:
         f"client_id={settings.google_client_id}&"
         f"redirect_uri={settings.redirect_google_to_uri}&"
         f"scope=openid%20profile%20email&"
-        f"&state={jwt_token}"
+        f"&state={jwt_token}&"
+        f"access_type=offline" # to get refresh token
     )
 
 
-@router.get("/callback")
+@router.get("/callback", response_class=RedirectResponse)
 async def auth_callback(
     code: str,
     state: str = Depends(state_storage.validate),
-    http_session: aiohttp.ClientSession = Depends(http_client.get_session)
+
+    id_token_validation: bool = True
 ):    
-    # token exchange
-    token_data = {
-        "code": code,
-        "client_id": settings.google_client_id,
-        "client_secret": settings.google_client_secret,
-        "redirect_uri": settings.redirect_google_to_uri,
-        "grant_type": "authorization_code",
-    }
+    access_token, refresh_token, id_token = await exchage_code_to_tokens(code)
+    if id_token_validation:
+        # NOTE(weldonfe): that check might be unnecessary
+        await validate_id_token(id_token, access_token)
 
-    async with http_session.post(url=settings.google_token_url, 
-                                 data=token_data) as resp:
-        token_response_data = await resp.json()
-        if resp.status != 200:
-            raise HTTPException(status_code=400, detail="Failed to exchange code for token")
-        
-    access_token = token_response_data.get("access_token")
-    
-    # fetching user info
-    headers = {"Authorization": f"Bearer {access_token}"}
-    async with http_session.get(url=settings.google_userinfo_url,
-                                headers=headers) as resp:
-        user_info = await resp.json()
-        logger.warning(user_info)
-
-    response = RedirectResponse(
-        url="/docs"
+    # NOTE(weldonfe): if we want to use header instead of cookie:
+    # 1. rewrite here, to return access_token directly and change response type to str in route decorator
+    # 2. change default transport method in google_auth.utils.security_handler.OpenIDConnectHandler
+    response = RedirectResponse(url="/docs") # TODO(weldonfe): change redirection route to actual frontend
+    response.set_cookie(
+        key="Authorization",
+        value=f"Bearer {access_token}",
+        httponly=True,  # to prevent JavaScript access
+        secure=True,
     )
-
-    response.headers.update(
-        {
-            "Set-Cookie": f"Authorization=Bearer {access_token}"
-        }
-    )
-
     return response
-    # return access_token
 
 
-@router.get("/protected-endpoint-test")
-async def test_auth(token: str = Depends(oauth2_scheme)):
-    pprint(token)
-    return {
-        "payload": "protected_data",
-        "token": token
-    }
+@router.get("/current_user_from_provider", response_model=UserFromProvider, status_code=200)
+async def get_current_user_from_provider(user = Depends(get_user_info_from_provider)):
+    return user

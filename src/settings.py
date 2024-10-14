@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     google_token_url: str = Field(alias="GOOGLE_TOKEN_URL")
     google_userinfo_url: str = Field(alias="GOOGLE_USERINFO_URL")
     google_authorization_url: str = Field(alias="GOOGLE_AUTHORIZATION_URL")
+    google_certs_url: str = Field(alias="GOOGLE_CERTS_URL")
+    certs_issuer: str = Field(alias="CERTS_ISSUER")
     redirect_google_to_uri: str = Field(alias="REDIRECT_GOOGLE_TO_URI")
 
     jwt_signing_key: str = Field(alias="JWT_SIGNING_KEY")

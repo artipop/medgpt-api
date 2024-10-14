@@ -4,16 +4,29 @@ from datetime import datetime
 from typing import Optional, List
 
 
+class UserFromProvider(BaseModel):
+    email: EmailStr
+    google_id: str = Field(alias="id")
+    verified_email: bool
+    name: str
+
+
+class UserFromDB(BaseModel):
+    id: str
+    email: EmailStr
+
+
+
 class UserCreate(BaseModel):
     email: EmailStr
-    name: str = Field(..., min_length=1)
-    google_id: str = Field(..., min_length=1)
+    name: str = Field(min_length=1)
+    google_id: str = Field(min_length=1)
 
 
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     name: Optional[str] = Field(None, min_length=1)
-    google_id: str = Field(..., min_length=1)
+    google_id: str = Field(min_length=1)
     
 
 class UserDelete(BaseModel):
@@ -30,7 +43,7 @@ class UserResponse(BaseModel):
 
 class RefreshTokenCreate(BaseModel):
     user_id: UUID
-    token: str = Field(..., min_length=1)
+    token: str = Field(min_length=1)
     expires_at: datetime
 
 

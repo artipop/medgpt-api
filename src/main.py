@@ -7,15 +7,15 @@ from settings import settings
 from common.logger import logger
 from auth.router import router as auth_router
 from google_auth.router import router as google_auth_router
-from google_auth.dependencies import get_http_client
+from google_auth.utils.http_client import HttpClient
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    http_cleint = get_http_client()
-    await http_cleint.init_session()
+    http_client = HttpClient()
+    await http_client.init_session()
     yield
-    await http_cleint.close_session()
+    await http_client.close_session()
 
 
 app = FastAPI(
