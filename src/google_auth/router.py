@@ -1,6 +1,6 @@
 import aiohttp
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 from sqlalchemy.future import select
 from database import get_session
@@ -13,7 +13,8 @@ from google_auth.dependencies import state_storage
 from google_auth.utils.sequrity_requests import (
     exchage_code_to_tokens,
     get_user_info_from_provider,
-    validate_id_token
+    validate_id_token,
+    get_new_access_token
 )
 from google_auth.utils.http_client import HttpClient
 from google_auth.schemas import UserFromProvider
@@ -79,6 +80,11 @@ async def auth_callback(
     id_token_validation: bool = True
 ):    
     access_token, refresh_token, id_token = await exchage_code_to_tokens(code)
+
+    logger.warning(f"ACCESS: {access_token}")
+    logger.warning(f"REFRESH: {refresh_token}")
+    logger.warning(f"ID: {id_token}")
+
     if id_token_validation:
         # NOTE(weldonfe): that check might be unnecessary
         await validate_id_token(id_token, access_token)
@@ -96,6 +102,24 @@ async def auth_callback(
     return response
 
 
+@router.post("/logout")
+async def logout(
+        response: Response
+    ):
+
+    response.delete_cookie(key="Authorization", httponly=True, secure=True)
+    return
+    # NOTE(weldonfe) should we rewoke old refresh token here
+    # return RedirectResponse(url="https://accounts.google.com/logout")
+
+
 @router.get("/current_user_from_provider", response_model=UserFromProvider, status_code=200)
 async def get_current_user_from_provider(user = Depends(get_user_info_from_provider)):
     return user
+
+
+@router.post("/refresh_access_token")
+async def refresh_token(token: str):
+    data = await get_new_access_token(token)
+    pprint(data)
+

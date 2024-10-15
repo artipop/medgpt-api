@@ -27,9 +27,7 @@ async def get_user_info_from_provider(
     return UserFromProvider(**user_info)
 
 
-async def exchage_code_to_tokens(
-    code: str,
-) -> Dict[str, str]:
+async def exchage_code_to_tokens(code: str) -> Dict[str, str]:
     http_session: aiohttp.ClientSession = await HttpClient().get_session()
     exchange_request_payload = {
         "code": code,
@@ -54,6 +52,47 @@ async def exchage_code_to_tokens(
             response_data.get("id_token")
         )
     
+
+async def get_new_access_token(referesh_token: str):
+    http_session: aiohttp.ClientSession = await HttpClient().get_session()
+    refresh_request_payload = {
+        "client_id": settings.google_client_id,
+        "client_secret": settings.google_client_secret,
+        "refresh_token": referesh_token,
+        "grant_type": "refresh_token"
+    }
+    async with http_session.post(
+        url=settings.google_token_url, 
+        data=refresh_request_payload
+    ) as refresh_resp:
+        if refresh_resp.status != 200:
+            raise OpenIDConnectException(
+                detail="Failed to refresh access token"
+            )
+        response_data = await refresh_resp.json()
+        logger.warning(response_data)
+    return response_data
+
+
+# async def rewoke_token(referesh_token: str):
+#     http_session: aiohttp.ClientSession = await HttpClient().get_session()
+#     refresh_request_payload = {
+#         "client_id": settings.google_client_id,
+#         "client_secret": settings.google_client_secret,
+#         "refresh_token": referesh_token,
+#         "grant_type": "refresh_token"
+#     }
+#     async with http_session.post(
+#         url=settings.google_token_url, 
+#         data=refresh_request_payload
+#     ) as refresh_resp:
+#         if refresh_resp.status != 200:
+#             raise OpenIDConnectException(
+#                 detail="Failed to refresh access token"
+#             )
+#         response_data = await refresh_resp.json()
+#         logger.warning(response_data)
+#     return response_data
 
 async def validate_id_token(
     id_token: str, 
