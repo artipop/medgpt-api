@@ -15,8 +15,12 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../s
 from settings import settings
 from database import Base
 
-from src.google_auth.models import User, RefreshToken
-
+from google_auth.models.oidc_models import (
+    OIDCUser,
+    AccessToken,
+    RefreshToken,
+    RefreshToAccessTokenMapping
+)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

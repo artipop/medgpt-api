@@ -19,9 +19,11 @@ class Settings(BaseSettings):
     google_client_id: str = Field(alias="GOOGLE_CLIENT_ID")
     google_client_secret: str = Field(alias="GOOGLE_CLIENT_SECRET")
     google_token_url: str = Field(alias="GOOGLE_TOKEN_URL")
+    google_tokeninfo_url: str = Field(alias="GOOGLE_TOKENINFO_URL")
     google_userinfo_url: str = Field(alias="GOOGLE_USERINFO_URL")
     google_authorization_url: str = Field(alias="GOOGLE_AUTHORIZATION_URL")
     google_certs_url: str = Field(alias="GOOGLE_CERTS_URL")
+    google_revoke_url: str = Field(alias="GOOGLE_REVOKE_URL")
     certs_issuer: str = Field(alias="CERTS_ISSUER")
     redirect_google_to_uri: str = Field(alias="REDIRECT_GOOGLE_TO_URI")
 

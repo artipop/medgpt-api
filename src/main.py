@@ -3,18 +3,24 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
+# common app dependencies
 from settings import settings
 from common.logger import logger
+# startup dependencies
+from common.http_client import HttpClient
+from google_auth.utils.id_token_validation import IdentityProviderCerts
+# routers
 from auth.router import router as auth_router
 from google_auth.router import router as google_auth_router
-from google_auth.utils.http_client import HttpClient
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     http_client = HttpClient()
     await http_client.init_session()
+    await IdentityProviderCerts().renew_certs()
+    # code above that line executes before app started
     yield
+    # code below that line executes when app terminates
     await http_client.close_session()
 
 

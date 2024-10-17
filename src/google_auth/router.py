@@ -1,57 +1,27 @@
 import aiohttp
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import RedirectResponse
-from sqlalchemy.future import select
 from database import get_session
-from google_auth.models import User, UserRepository
-from google_auth.schemas import UserCreate, UserDelete, UserUpdate, UserResponse
 from settings import settings
-from jose import jwt
 from common.logger import logger
 from google_auth.dependencies import state_storage
-from google_auth.utils.sequrity_requests import (
+from google_auth.utils.id_token_validation import validate_id_token
+from google_auth.utils.requests import (
     exchage_code_to_tokens,
     get_user_info_from_provider,
-    validate_id_token,
-    get_new_access_token
+    get_new_access_token,
+    revoke_token
 )
-from google_auth.utils.http_client import HttpClient
-from google_auth.schemas import UserFromProvider
+from google_auth.dependencies import security_scheme
+from google_auth.services.oidc_service import OIDCService
+
 from pprint import pprint
 
 router = APIRouter(
     prefix="/google-auth",
     tags=["google authorization"]
 )
-
-
-@router.get("/get_all", response_model=list[UserResponse])
-async def get_all(session=Depends(get_session)):
-    users: list[UserResponse] = await UserRepository(session).get_all()
-    return users
-
-
-@router.post("/create", response_model=UserResponse)
-async def create_user(user: UserCreate, session=Depends(get_session)):
-    created_user: UserResponse = await UserRepository(session).create(user)
-    await UserRepository(session).commit()
-    return created_user
-
-
-@router.put("/update/{id}", response_model=UserResponse)
-async def update_user(id: UUID, user: UserUpdate, session=Depends(get_session)):
-    updated_user: UserResponse = await UserRepository(session).update_one(id, user)
-    await UserRepository(session).commit()
-    return updated_user
-
-
-@router.delete("/delete/{id}", response_model=int)
-async def delete_user(id: UUID, session=Depends(get_session)):
-    rows: int = await UserRepository(session).delete_by_id(id)
-    await UserRepository(session).commit()
-    return rows
-
 
 @router.get("/login", response_class=RedirectResponse)
 async def redicrect_to_google_auth() -> str:
@@ -75,19 +45,18 @@ async def redicrect_to_google_auth() -> str:
 @router.get("/callback", response_class=RedirectResponse)
 async def auth_callback(
     code: str,
-    state: str = Depends(state_storage.validate),
-
-    id_token_validation: bool = True
+    request: Request,
+    state: str=Depends(state_storage.validate),
+    session=Depends(get_session)
 ):    
     access_token, refresh_token, id_token = await exchage_code_to_tokens(code)
-
-    logger.warning(f"ACCESS: {access_token}")
-    logger.warning(f"REFRESH: {refresh_token}")
-    logger.warning(f"ID: {id_token}")
-
-    if id_token_validation:
-        # NOTE(weldonfe): that check might be unnecessary
-        await validate_id_token(id_token, access_token)
+    user_data_from_token_id = await validate_id_token(id_token, access_token)
+    
+    await OIDCService(session).get_or_create_user(
+        user_data = user_data_from_token_id,
+        access_token=access_token,
+        refresh_token=refresh_token
+    )
 
     # NOTE(weldonfe): if we want to use header instead of cookie:
     # 1. rewrite here, to return access_token directly and change response type to str in route decorator
@@ -102,24 +71,77 @@ async def auth_callback(
     return response
 
 
-@router.post("/logout")
+@router.get("/logout")
 async def logout(
-        response: Response
-    ):
+    response: Response, 
+    token: str = Depends(security_scheme),
+    session=Depends(get_session)
+):
+    """
+    does not werify user identity
+    revokes token from identity provider
+    deletes access_token from cookies
+    searches for corresponding refresh token in db and deletes both access and refresh
+    """
+
+    deleted_tokens = await OIDCService(session).logout(token)
+    pprint(deleted_tokens)
+    if deleted_tokens:
+        for token in deleted_tokens:
+            try:
+                await revoke_token(token)
+            except Exception as e: # token might be expired or allready revoked
+                pass
+    
+    response.delete_cookie(key="Authorization", httponly=True, secure=True)
+    
+    #TODO(weldonfe): uncomment and change redirection route in row below 
+    # return RedirectResponse(url="/google-auth/login")
+
+
+@router.get("/refresh")
+async def get_refresh_token(
+    response: Response,
+    access_token_to_refresh: str = Depends(security_scheme),
+    session=Depends(get_session)
+):
+    refresh_token = await OIDCService(session).get_refresh_token(access_token_to_refresh)
+    try: 
+        reneved_access_token = await get_new_access_token(refresh_token)
+    
+    except Exception as e: # probably refresh token expired too
+        await OIDCService(session).logout(access_token_to_refresh)
+        response.delete_cookie(key="Authorization", httponly=True, secure=True)
+        return
+        # return RedirectResponse(url="/google-auth/login")
+
+    await OIDCService(session).rotate_access_tokens(
+        expired_token=access_token_to_refresh,
+        renewed_token=reneved_access_token,
+    )
 
     response.delete_cookie(key="Authorization", httponly=True, secure=True)
+    response.set_cookie(
+        key="Authorization",
+        value=f"Bearer {reneved_access_token}",
+        httponly=True,  # to prevent JavaScript access
+        secure=True,
+    )
     return
-    # NOTE(weldonfe) should we rewoke old refresh token here
-    # return RedirectResponse(url="https://accounts.google.com/logout")
+    # return RedirectResponse(url="/docs")
 
 
-@router.get("/current_user_from_provider", response_model=UserFromProvider, status_code=200)
-async def get_current_user_from_provider(user = Depends(get_user_info_from_provider)):
-    return user
+@router.get("/get_current_user/")
+async def get_current_user(
+    token: str = Depends(security_scheme),
+    session=Depends(get_session)
+):
+    is_token_not_expired = await OIDCService(session).is_token_not_expired_yet(token)
+    if is_token_not_expired:
+        print("ok")
+
+    
 
 
-@router.post("/refresh_access_token")
-async def refresh_token(token: str):
-    data = await get_new_access_token(token)
-    pprint(data)
+
 
