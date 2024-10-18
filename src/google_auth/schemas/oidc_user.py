@@ -4,7 +4,7 @@ from datetime import datetime
 
 
 class UserInfoFromIDProvider(BaseModel):
-    name: str
+    # name: str
     email: EmailStr
 
 class OIDCUserCreate(BaseModel):

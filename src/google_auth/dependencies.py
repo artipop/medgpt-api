@@ -15,7 +15,6 @@ from google_auth.utils.requests import (
     get_user_info_from_provider,
     get_new_tokens,
 )
-
 security_scheme = OpenIDConnectHandler(settings)
 state_storage = StateStorage() # TODO(weldonfe): refactor somehow later, maybe to Redis storage?
 

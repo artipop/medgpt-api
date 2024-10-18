@@ -158,6 +158,8 @@ class OIDCService:
         now = datetime.now(timezone.utc)
         
         TOKEN_EXPIRES_IN = 3600 * 0.95
+        # TOKEN_EXPIRES_IN_FOR_DEBUG = 2
         if (now - expiration_timestamp).total_seconds() < TOKEN_EXPIRES_IN:
+        # if (now - expiration_timestamp).total_seconds() < TOKEN_EXPIRES_IN_FOR_DEBUG:
             return False
         return True
