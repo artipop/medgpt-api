@@ -19,9 +19,9 @@ docs_build
 site_build
 venv
 *.log
-
 docs.zip
 archive.zip
+
 
 # vim temporary files
 *~
@@ -34,6 +34,7 @@ archive.zip
 #poetry
 poetry.lock
 .venv
+.env-example
 
 #alembic
 alembic/versions/*

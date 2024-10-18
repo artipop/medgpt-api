@@ -78,3 +78,10 @@ class AbstractRepository(ABC):
         query = select(self.model).filter_by(**kwargs)
         result = await self._session.execute(query)
         return result.scalars().all()
+    
+    async def delete_by_value(self, field_name, value):
+        field = getattr(self.model, field_name)
+        stmt = delete(self.model).where(field == value)
+        result = await self._session.execute(stmt)
+    
+        return result.rowcount 
