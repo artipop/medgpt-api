@@ -1,10 +1,9 @@
 import uuid
 from sqlalchemy import ForeignKey, String, UUID, TIMESTAMP, func
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 from datetime import datetime
 from pydantic import EmailStr
 
-from sqlalchemy.orm import relationship, Mapped, mapped_column
 from database import Base
 
 

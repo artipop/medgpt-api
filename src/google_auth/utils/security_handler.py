@@ -1,9 +1,8 @@
 from enum import Enum, auto
 from typing import Optional, Dict
-from fastapi import Request
+from fastapi import Request, HTTPException
 
 from google_auth.exceptions import OpenIDConnectException
-from common.logger import logger
 
 
 class TransportMethod(Enum):
@@ -60,7 +59,10 @@ class OpenIDConnectHandler:
         return token
     
     async def __call__(self, request: Request) -> Optional[str]:
-         return self.parse_auth_data(request=request)   
+        try: 
+            return self.parse_auth_data(request=request)   
+        except HTTPException:
+            raise OpenIDConnectException(detail="Not authenticated")
 
 
 

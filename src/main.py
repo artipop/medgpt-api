@@ -8,10 +8,11 @@ from settings import settings
 from common.logger import logger
 # startup dependencies
 from common.http_client import HttpClient
-from google_auth.utils.id_token_validation import IdentityProviderCerts
+from google_auth.utils.id_provider_certs import IdentityProviderCerts
 # routers
 from auth.router import router as auth_router
 from google_auth.router import router as google_auth_router
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

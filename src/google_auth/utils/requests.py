@@ -1,24 +1,17 @@
 import aiohttp
-from typing import Optional, Dict, List
-from fastapi import Depends
-from jose import jwt
-
+from typing import Dict, Tuple
 from settings import settings
-from common.logger import logger
-from google_auth.dependencies import security_scheme
+
 from common.http_client import HttpClient
 from google_auth.exceptions import OpenIDConnectException
-from google_auth.schemas.oidc_user import UserInfoFromIDProvider
-from pprint import pprint
 
-async def get_user_info_from_provider(
-    access_token: str = Depends(security_scheme)
-) -> UserInfoFromIDProvider:
+
+async def get_user_info_from_provider(token: str) -> Dict:
     """   
     Requests user information from OpenID provider (Google auth server) 
     """
     http_session: aiohttp.ClientSession = await HttpClient().get_session()
-    headers = {"Authorization": f"Bearer {access_token}"}
+    headers = {"Authorization": f"Bearer {token}"}
     async with http_session.get(url=settings.google_userinfo_url, 
                                 headers=headers) as user_info_resp:
         
@@ -27,10 +20,10 @@ async def get_user_info_from_provider(
         
         user_info = await user_info_resp.json()
 
-    return UserInfoFromIDProvider(**user_info)
+    return user_info
 
 
-async def get_token_info(token: str = Depends(security_scheme)):
+async def get_token_info(token: str):
     """
     returns token info if token is valid 
     else raises HTTPException with 401 Anouthorized status code 
@@ -69,7 +62,6 @@ async def exchage_code_to_tokens(code: str) -> Dict[str, str]:
                 detail="Failed to exchange code for token"
             )
         response_data = await token_resp.json()
-        pprint(response_data)
         return (
             response_data.get("access_token"),
             response_data.get("refresh_token"),
@@ -77,7 +69,7 @@ async def exchage_code_to_tokens(code: str) -> Dict[str, str]:
         )
     
 
-async def get_new_access_token(refresh_token: str):
+async def get_new_tokens(refresh_token: str) -> Tuple[str]: # renewed access and refresh
     http_session: aiohttp.ClientSession = await HttpClient().get_session()
     refresh_request_payload = {
         "client_id": settings.google_client_id,
@@ -94,7 +86,8 @@ async def get_new_access_token(refresh_token: str):
             )
         
         response_data = await refresh_resp.json()
-    return response_data.get("access_token")
+
+    return response_data.get("access_token"), response_data.get("id_token")
 
 
 async def revoke_token(token: str):

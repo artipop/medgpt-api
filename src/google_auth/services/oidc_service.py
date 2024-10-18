@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from google_auth.models.oidc_repositories import (
     OIDCRepository, 
     RefreshTokenRepository, 
@@ -5,10 +7,8 @@ from google_auth.models.oidc_repositories import (
     RefreshToAccessTokenMappingRepository
 )
 from google_auth.models.oidc_models import (
-    OIDCUser,
     AccessToken,
     RefreshToken,
-    RefreshToAccessTokenMapping
 )
 
 from google_auth.schemas.oidc_user import UserInfoFromIDProvider
@@ -16,11 +16,15 @@ from google_auth.schemas.oidc_user import OIDCUserRead, OIDCUserCreate
 from google_auth.schemas.token import TokenRead, TokenCreate, TokensRelationship
 from google_auth.exceptions import DBException
 
-from datetime import datetime, timezone, timedelta
 
 class OIDCService:
     def __init__(self, session):
         self.session = session
+
+    async def get_user(self, user_data: UserInfoFromIDProvider):
+        "a method for getting user data from the database using his gmail"
+        user_db_ans = await OIDCRepository(self.session).get_existing_user(user_data)
+        return OIDCUserRead.model_validate(user_db_ans, from_attributes=True)
 
     async def get_or_create_user(
         self, 
@@ -28,6 +32,9 @@ class OIDCService:
         access_token: str,
         refresh_token: str, 
     ):
+        """
+        Method for creating or updating user data after authentication
+        """
         try: 
             user_db_ans = await OIDCRepository(self.session).get_or_create_user(user_data)            
             access_token_db_ans = await AccessTokenRepository(self.session).create(
@@ -50,7 +57,7 @@ class OIDCService:
             )
             await self.session.commit()
         except Exception as e:
-            self.session.rollback()
+            await self.session.rollback()
             raise DBException(detail="Smth wrong with DB")
         
     async def logout(self, access_token: str):
@@ -77,7 +84,7 @@ class OIDCService:
             return deleted_access_token, deleted_refresh_token
         
         except Exception as e:
-            self.session.rollback()
+            await self.session.rollback()
             raise DBException(detail="Smth wrong with DB")
     
 
@@ -92,7 +99,7 @@ class OIDCService:
                 return tokens_relationship[RefreshToken].token
         
         except Exception as e:
-            self.session.rollback()
+            await self.session.rollback()
             raise DBException(detail="Smth wrong with DB")
 
         
@@ -142,15 +149,15 @@ class OIDCService:
             raise DBException(detail="Smth wrong with DB")
 
 
-    async def is_token_not_expired_yet(self, access_token: str):
+    async def is_token_expired(self, access_token: str):
         expiration_timestamp = await AccessTokenRepository(self.session).get_by_value(access_token)
-        if not expiration_timestamp:
-            return False
+        if not expiration_timestamp: # token already deleted from db
+            return True
         
         expiration_timestamp = expiration_timestamp.replace(tzinfo=timezone.utc)
         now = datetime.now(timezone.utc)
         
         TOKEN_EXPIRES_IN = 3600 * 0.95
-        if (now - expiration_timestamp) < TOKEN_EXPIRES_IN:
-            return True
-        return False
+        if (now - expiration_timestamp).total_seconds() < TOKEN_EXPIRES_IN:
+            return False
+        return True

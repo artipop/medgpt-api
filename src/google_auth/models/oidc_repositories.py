@@ -12,17 +12,21 @@ from google_auth.schemas.oidc_user import (
     OIDCUserRead
 )
 
-from sqlalchemy import select, delete, update, insert
-
+from sqlalchemy import select, delete
 
 
 class OIDCRepository(AbstractRepository):
     model = OIDCUser
-    
-    async def get_or_create_user(self, user_data: UserInfoFromIDProvider):
+
+    async def get_existing_user(self, user_data: UserInfoFromIDProvider):
         existing_user = await self.get_by_filter({"email": user_data.email})
         if existing_user:
             return existing_user[0]
+    
+    async def get_or_create_user(self, user_data: UserInfoFromIDProvider):
+        existing_user = await self.get_existing_user(user_data)
+        if existing_user:
+            return existing_user 
 
         created_user = await self.create(OIDCUserCreate(email=user_data.email))
 
@@ -50,10 +54,9 @@ class RefreshTokenRepository(AbstractRepository):
     model = RefreshToken
 
 
-
 class RefreshToAccessTokenMappingRepository(AbstractRepository):
     model = RefreshToAccessTokenMapping
-
+    
     async def get_refresh_token_by_access_token(self, access_token: str):
         query = (
             select(self.model, AccessToken, RefreshToken)
@@ -63,10 +66,6 @@ class RefreshToAccessTokenMappingRepository(AbstractRepository):
         )
         result = await self._session.execute(query)
         return result.mappings().one_or_none()
-    
-
-        
-        
 
 
 
