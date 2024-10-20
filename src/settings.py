@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     jwt_signing_key: str = Field(alias="JWT_SIGNING_KEY")
     jwt_encoding_algo: str = Field(alias="JWT_ENCODING_ALGORITHM")
 
+    llm_api_url: str = Field(alias="LLM_API_URL")
+    llm_api_login: str = Field(alias="LLM_API_LOGIN")
+    llm_api_password: str = Field(alias="LLM_API_PASSWORD")
+
 
     @property
     def db_url(self) -> str:
@@ -44,7 +48,7 @@ class Settings(BaseSettings):
         )
     
     model_config = SettingsConfigDict(
-        env_file=".env-example"
+        env_file=".env"
     )
 
 settings = Settings()

@@ -15,8 +15,8 @@ meta = sqlalchemy.MetaData()
 engine = create_async_engine(settings.db_url)
 
 async_session = sessionmaker(
-    engine, 
-    class_=AsyncSession, 
+    engine,
+    class_=AsyncSession,
     expire_on_commit=False
 )
 
@@ -37,7 +37,7 @@ async def get_session():
 
 
 class AbstractRepository(ABC):
-    def __init__(self, session: Session):
+    def __init__(self, session: AsyncSession):
         self._session = session
 
     model = None
@@ -78,10 +78,10 @@ class AbstractRepository(ABC):
         query = select(self.model).filter_by(**kwargs)
         result = await self._session.execute(query)
         return result.scalars().all()
-    
+
     async def delete_by_value(self, field_name, value):
         field = getattr(self.model, field_name)
         stmt = delete(self.model).where(field == value)
         result = await self._session.execute(stmt)
-    
-        return result.rowcount 
+
+        return result.rowcount

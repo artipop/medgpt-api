@@ -5,8 +5,6 @@ services:
     image: postgres:13.8-bullseye
     container_name: ${PROJECT_TITLE}-db
     restart: always
-    env_file: 
-      - .env-example
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}

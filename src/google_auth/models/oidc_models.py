@@ -14,6 +14,7 @@ class OIDCUser(Base):
     email: Mapped[EmailStr] = mapped_column(String(255), unique=True, nullable=False)
     refresh_tokens = relationship("RefreshToken", back_populates="user")
     access_tokens = relationship("AccessToken", back_populates="user")
+    chats = relationship('Chat', back_populates='owner')
 
 
 class BaseToken(Base):
