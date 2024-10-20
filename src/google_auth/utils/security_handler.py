@@ -61,8 +61,8 @@ class OpenIDConnectHandler:
     async def __call__(self, request: Request) -> Optional[str]:
         try: 
             return self.parse_auth_data(request=request)   
-        except HTTPException:
-            raise OpenIDConnectException(detail="Not authenticated")
+        except HTTPException as e:
+            raise e
 
 
 

@@ -1,0 +1,198 @@
+openapi: 3.1.0
+info:
+  title: mymedgpt back
+  description: mymedgpt back
+  version: 0.2.0
+servers:
+  - url: 'https://bck.mymedgpt.com/0.1/'
+paths:
+  /ping:
+    get:
+      security:
+        - basicAuth: [ ]
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pong'
+          description: Successful response to ping
+        400:
+          $ref: "#/components/responses/ErrorBadInput"
+        404:
+          $ref: "#/components/responses/ErrorNotFound"
+        422:
+          $ref: "#/components/responses/ErrorValidation"
+        500:
+          $ref: "#/components/responses/ErrorBackend"
+  /uploadfile:
+    post:
+      security:
+        - basicAuth: [ ]
+      requestBody:
+        $ref: "#/components/requestBodies/Upload"
+      responses:
+        200:
+          $ref: "#/components/responses/Success"
+        400:
+          $ref: "#/components/responses/ErrorBadInput"
+        404:
+          $ref: "#/components/responses/ErrorNotFound"
+        422:
+          $ref: "#/components/responses/ErrorValidation"
+        500:
+          $ref: "#/components/responses/ErrorBackend"
+  /get_answer:
+    post:
+      security:
+        - basicAuth: [ ]
+      requestBody:
+        $ref: "#/components/requestBodies/Message"
+      responses:
+        200:
+          $ref: "#/components/responses/Success"
+        400:
+          $ref: "#/components/responses/ErrorBadInput"
+        404:
+          $ref: "#/components/responses/ErrorNotFound"
+        422:
+          $ref: "#/components/responses/ErrorValidation"
+        500:
+          $ref: "#/components/responses/ErrorBackend"
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: Basic Auth
+  schemas:
+    Pong:
+      type: object
+      required:
+        - message
+      properties: 
+        message:
+          type: string
+      examples:
+        ResponseOnPing:
+          summary: Response to GET /ping
+          value: { "message": "pong" }
+    UploadFile:
+      type: object
+      required:
+        - file
+      properties:
+        file:
+          type: string
+          format: binary
+    Filename:
+      properties:
+        filename:
+          type: string
+          title: Filename
+      type: object
+      required:
+        - filename
+      title: Filename
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    Message:
+      properties:
+        message:
+          type: string
+          title: Message
+      type: object
+      required:
+        - message
+      title: Message
+    ResponseModel:
+      properties:
+        num_chunks:
+          type: integer
+          title: Num Chunks
+        message:
+          type: string
+          title: Message
+        documents:
+          type: string
+          title: Documents
+      type: object
+      required:
+        - num_chunks
+        - message
+        - documents
+      title: ResponseModel
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+        - loc
+        - msg
+        - type
+      title: ValidationError
+  requestBodies:
+    Upload:
+      description: File upload
+      content:
+        multipart/form-data:
+          schema:
+            $ref: "#/components/schemas/UploadFile"
+    Message:
+      description: Message to RAG
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Message'
+  responses:
+    Success:
+      description: Successful Response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ResponseModel'
+    ErrorBadInput:
+      description: Bad Input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HTTPValidationError'
+    ErrorNotFound:
+      description: managed by reverse proxy
+      content:
+        text/plain:
+          schema:
+            type: string
+    ErrorValidation:
+      description: Validation Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HTTPValidationError'
+    ErrorBackend:
+      description: managed by reverse proxy
+      content:
+        text/plain:
+          schema:
+            type: string
+    
+  

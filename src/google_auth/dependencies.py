@@ -23,28 +23,29 @@ async def authenticate(
     response: Response,
     session = Depends(get_session),
     token: str = Depends(security_scheme),
-):
+) -> UserInfoFromIDProvider:
     is_token_expired = await OIDCService(session).is_token_expired(token)
-    try:
-        if is_token_expired:
-            reneved_access_token = await refresh_token(session, token)
-            token = reneved_access_token
-            
-            response.delete_cookie(key="Authorization", httponly=True, secure=True)
-            response.set_cookie(
-                key="Authorization",
-                value=f"Bearer {reneved_access_token}",
-                httponly=True,  # to prevent JavaScript access
-                secure=True,
-            )
+    # try:
+    if is_token_expired:
+        reneved_access_token = await refresh_token(session, token)
+        token = reneved_access_token
 
-        user_info = await get_user_info_from_provider(token=token)
-        return UserInfoFromIDProvider(**user_info)
-
-    except HTTPException as e:
         response.delete_cookie(key="Authorization", httponly=True, secure=True)
-        logger.warning(e)
-        raise OpenIDConnectException(detail="Not authenticated")
+        response.set_cookie(
+            key="Authorization",
+            value=f"Bearer {reneved_access_token}",
+            httponly=True,  # to prevent JavaScript access
+            secure=True,
+        )
+
+    user_info = await get_user_info_from_provider(token=token)
+    return UserInfoFromIDProvider(**user_info)
+
+    # except HTTPException as e:
+    #     response.delete_cookie(key="Authorization", httponly=True, secure=True)
+    #     logger.warning(e)
+    #     raise e
+        # raise OpenIDConnectException(detail="Not authenticated")
     
 
 async def refresh_token(
