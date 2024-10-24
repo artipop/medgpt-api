@@ -47,7 +47,6 @@ app.include_router(chat_router)
 
 if __name__ == "__main__":
     logger.info("app started")
-    
     uvicorn.run(
         app="main:app", 
         host=settings.fastapi_host,

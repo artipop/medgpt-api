@@ -1,7 +1,19 @@
+import os.path
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import (
     Field,
+    BaseModel
 )
+
+base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+
+class NativeAuthJWT(BaseModel):
+    private_key_path: Path = Path(os.path.join(base_path, "certs", "jwt-private.pem")) # TODO: refactor later
+    public_key_path: Path = Path(os.path.join(base_path, "certs", "jwt-public.pem"))
+    algorithm: str = "RS256"
+
 
 
 class Settings(BaseSettings):
@@ -34,6 +46,7 @@ class Settings(BaseSettings):
     llm_api_login: str = Field(alias="LLM_API_LOGIN")
     llm_api_password: str = Field(alias="LLM_API_PASSWORD")
 
+    native_auth_jwt: NativeAuthJWT = NativeAuthJWT()
 
     @property
     def db_url(self) -> str:
