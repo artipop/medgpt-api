@@ -38,3 +38,6 @@ poetry.lock
 
 #alembic
 alembic/versions/*
+
+#native auth
+certs/

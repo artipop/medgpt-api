@@ -14,6 +14,7 @@ from auth.router import router as auth_router
 from google_auth.router import router as google_auth_router
 from chat.router import router as chat_router
 
+from auth.utils.jwt_helpers import encode_jwt, decode_jwt
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -47,7 +48,6 @@ app.include_router(chat_router)
 
 if __name__ == "__main__":
     logger.info("app started")
-    
     uvicorn.run(
         app="main:app", 
         host=settings.fastapi_host,
