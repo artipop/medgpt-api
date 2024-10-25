@@ -13,7 +13,7 @@ class NativeAuthJWT(BaseModel):
     private_key_path: Path = Path(os.path.join(base_path, "certs", "jwt-private.pem")) # TODO: refactor later
     public_key_path: Path = Path(os.path.join(base_path, "certs", "jwt-public.pem"))
     algorithm: str = "RS256"
-
+    access_token_expire_minutes: int = 5
 
 
 class Settings(BaseSettings):
