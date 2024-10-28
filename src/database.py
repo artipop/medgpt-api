@@ -72,6 +72,7 @@ class AbstractRepository(ABC):
 
     async def delete_by_id(self, id):
         result = await self._session.execute(delete(self.model).where(self.model.id == id))
+        await self._session.commit()
         return result.rowcount
 
     async def get_by_filter(self, kwargs):
