@@ -21,6 +21,9 @@ from google_auth.models.oidc_models import (
     RefreshToken,
     RefreshToAccessTokenMapping
 )
+from chat.models import (
+    Chat, Message
+)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
