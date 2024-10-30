@@ -63,6 +63,7 @@ class AbstractRepository(ABC):
     async def create(self, obj):
         query = insert(self.model).values(**obj.model_dump()).returning(self.model)
         result = await self._session.execute(query)
+        await self._session.commit()
         return result.scalars().first()
 
     async def update_one(self, id, obj):

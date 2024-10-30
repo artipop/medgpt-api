@@ -25,6 +25,10 @@ class ChatRepository(AbstractRepository):
         result = await self._session.execute(sel)
         return result.scalars().first()
 
+    async def delete(self, chat: Chat) -> None:
+        await self._session.delete(chat)
+        await self._session.commit()
+
 
 class MessageRepository(AbstractRepository):
     model = Message

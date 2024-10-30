@@ -1,6 +1,7 @@
 import uuid
+from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, ForeignKey, Text, UUID
+from sqlalchemy import Column, Integer, String, ForeignKey, Text, UUID, TIMESTAMP
 from sqlalchemy.orm import relationship, mapped_column, Mapped
 
 from database import Base
@@ -14,7 +15,8 @@ class Chat(Base):
     owner_id: Mapped[UUID] = mapped_column(UUID, ForeignKey('users.id'))
 
     owner = relationship('User', back_populates='chats')
-    messages = relationship('Message', back_populates='chat', cascade="all, delete-orphan")
+    messages = relationship('Message', back_populates='chat', cascade="all, delete-orphan",
+                            order_by='Message.created_at')
 
 
 class Message(Base):
@@ -22,7 +24,9 @@ class Message(Base):
 
     id: Mapped[UUID] = mapped_column(UUID, primary_key=True, default=uuid.uuid4)
     content = mapped_column(Text, nullable=False)
+    role: Mapped[str] = mapped_column(String(100), nullable=True)
     chat_id = mapped_column(UUID, ForeignKey('chats.id'))
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP, default=datetime.now, nullable=True)
 
     chat = relationship('Chat', back_populates='messages')
     references = relationship('LiteratureReference', back_populates='message', cascade="all, delete-orphan")
