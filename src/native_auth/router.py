@@ -1,12 +1,9 @@
-from fastapi import APIRouter, Depends, Form
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from typing import Dict
-from native_auth.utils.jwt_helpers import encode_jwt, decode_jwt 
+from fastapi import APIRouter, Depends, Response
 from native_auth.schemas.token import TokenInfo
 from native_auth.utils.password_helpers import hash_password
 from native_auth.dependencies import (
     valiadate_auth_user, 
-    get_current_active_auth_user, 
+    get_current_verified_auth_user, 
     get_current_auth_user_for_refresh
 )
 from database import get_session
@@ -16,9 +13,7 @@ from users.services.native_user_service import NativeUserService
 from users.schemas.naitve_user_schemas import (
     UserCreatePlainPassword, 
     UserCreateHashedPassword, 
-    UserLogin, 
     UserOut, 
-    UserInDB
 )
 
 from pprint import pprint
@@ -48,7 +43,6 @@ async def register_user(
     registred_user_data = await NativeUserService(session).create_user(
         UserCreateHashedPassword(
             email=user_data.email,
-            username=user_data.username,
             password_hash=password_hash
         )
     )
@@ -57,28 +51,32 @@ async def register_user(
 
 @router.post("/login/")
 async def auth_user_issue_jwt(
+    response: Response,
     user: UserOut = Depends(valiadate_auth_user)
 ): 
-    print(type(user))
     access_token = create_access_token(user)
     refresh_token = create_refresh_token(user)
+
+    response.set_cookie(
+        key="Authorization", 
+        value=f"Bearer {refresh_token}"
+    )
     
     return TokenInfo(
         access_token=access_token,
-        refresh_token=refresh_token
     )
 
 
 @router.get("/users/me/")
 async def auth_user_check_self_info(
-    user: UserOut = Depends(get_current_active_auth_user)
+    user: UserOut = Depends(get_current_verified_auth_user)
 ):
     print(type(user))
     return user
 
 
 @router.post("/refresh/", response_model=TokenInfo, response_model_exclude_none=True)
-def auth_refresh_jwt(
+async def auth_refresh_jwt(
     user: UserOut = Depends(get_current_auth_user_for_refresh)
 ):
     access_token = create_access_token(user)
@@ -86,3 +84,19 @@ def auth_refresh_jwt(
     return TokenInfo(
         access_token=access_token,
     )
+
+
+@router.post("/refresh/", response_model=TokenInfo, response_model_exclude_none=True)
+async def auth_refresh_jwt(
+    user: UserOut = Depends(get_current_auth_user_for_refresh)
+):
+    access_token = create_access_token(user)
+
+    return TokenInfo(
+        access_token=access_token,
+    )
+
+@router.post("/logout/")
+async def unset_auth_cookie(response: Response):
+    response.delete_cookie(key="Authorization", httponly=True, secure=True)
+    return {"message": "Secure cookie has been deleted!"}
