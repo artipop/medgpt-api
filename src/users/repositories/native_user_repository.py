@@ -1,13 +1,7 @@
 from database import AbstractRepository
 from sqlalchemy import select, delete
 from users.models.native_user import NativeUser
-from users.schemas.naitve_user_schemas import (
-    UserCreatePlainPassword, 
-    UserCreateHashedPassword, 
-    UserLogin, 
-    UserOut, 
-    UserInDB
-)
+from users.schemas.naitve_user_schemas import UserCreatePlainPassword 
 
 
 class NativeUserRepository(AbstractRepository):
@@ -19,9 +13,7 @@ class NativeUserRepository(AbstractRepository):
         return result.scalars().one_or_none()
     
     async def check_user_existence(self, user_data: UserCreatePlainPassword):
-        query = select(self.model).filter(
-            (self.model.username == user_data.username) | (self.model.email == user_data.email)
-        )
+        query = select(self.model).where(self.model.email == user_data.email)
         result = await self._session.execute(query)
         return result.scalars().one_or_none()
 

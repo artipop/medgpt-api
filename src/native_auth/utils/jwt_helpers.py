@@ -24,7 +24,7 @@ def create_access_token(user: UserOut) -> str:
     jwt_payload = {
         "sub": str(user.id),
         "email": user.email,
-        "is_active": user.is_active,
+        "is_verified": user.is_verified,
     }
     return create_jwt(
         token_type=TokenType.ACCESS, 
@@ -37,8 +37,7 @@ def create_refresh_token(user: UserOut):
     jwt_payload = {
         "sub": str(user.id),
         "email": user.email,
-        "is_active": user.is_active,
-
+        "is_verified": user.is_verified,
     }
     return create_jwt(token_type=TokenType.REFRESH, token_data=jwt_payload)
 
