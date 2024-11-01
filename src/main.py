@@ -10,7 +10,7 @@ from common.logger import logger
 from common.http_client import HttpClient
 from google_auth.utils.id_provider_certs import IdentityProviderCerts
 # routers
-from auth.router import router as auth_router
+from native_auth.router import router as auth_router
 from google_auth.router import router as google_auth_router
 from chat.router import router as chat_router
 

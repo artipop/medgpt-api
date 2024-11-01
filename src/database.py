@@ -12,7 +12,7 @@ from settings import settings
 
 meta = sqlalchemy.MetaData()
 
-engine = create_async_engine(settings.db_url)
+engine = create_async_engine(settings.db_url, echo=True)
 
 async_session = sessionmaker(
     engine,
