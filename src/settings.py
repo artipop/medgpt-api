@@ -8,12 +8,17 @@ from pydantic import (
 
 base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
+ACCESS_TOKEN_EXPIRE_MINUTES = 5
+REFRESH_TOKEN_EXPIRE_MINUTES = 15
+
 
 class NativeAuthJWT(BaseModel):
     private_key_path: Path = Path(os.path.join(base_path, "certs", "jwt-private.pem")) # TODO: refactor later
     public_key_path: Path = Path(os.path.join(base_path, "certs", "jwt-public.pem"))
     algorithm: str = "RS256"
-    access_token_expire_minutes: int = 5
+    access_token_expire_minutes: int = ACCESS_TOKEN_EXPIRE_MINUTES
+    refresh_token_expire_minutes: int = REFRESH_TOKEN_EXPIRE_MINUTES
+
 
 
 class Settings(BaseSettings):
