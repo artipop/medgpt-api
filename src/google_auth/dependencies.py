@@ -15,6 +15,11 @@ from google_auth.utils.requests import (
     get_user_info_from_provider,
     get_new_tokens,
 )
+from native_auth.utils.jwt_helpers import (
+    decode_jwt_without_verification, 
+)
+from pprint import pprint
+
 security_scheme = OpenIDConnectHandler(settings)
 state_storage = StateStorage() # TODO(weldonfe): refactor somehow later, maybe to Redis storage?
 
@@ -22,8 +27,11 @@ state_storage = StateStorage() # TODO(weldonfe): refactor somehow later, maybe t
 async def authenticate(
     response: Response,
     session = Depends(get_session),
-    token: str = Depends(security_scheme),
+    token: str = Depends(security_scheme)
 ):
+    token_payload = decode_jwt_without_verification(token)
+    pprint(token_payload)
+
     is_token_expired = await OIDCService(session).is_token_expired(token)
     try:
         if is_token_expired:
@@ -85,7 +93,7 @@ async def validate_id_token(id_token: str, access_token: str) -> UserInfoFromIDP
         # here we can check expiration date, audience and client id,
         # but documentation says that it's unnecessary in our case (reference in func desc)
         return UserInfoFromIDProvider(**token_id_payload)
-    
+
     try:
         unverified_header = jwt.get_unverified_header(id_token)
         cert = await IdentityProviderCerts().find_relevant_cert(kid = unverified_header.get("kid", ""))
