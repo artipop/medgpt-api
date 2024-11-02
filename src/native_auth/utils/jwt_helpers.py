@@ -11,7 +11,8 @@ from users.schemas.naitve_user_schemas import (
     UserOut, 
     UserInDB
 )
-
+import base64
+from pprint import pprint
 
 TOKEN_TYPE_FIELD = "type"
 
@@ -106,3 +107,18 @@ def decode_jwt(
         ) 
     
     return decoded
+
+
+def decode_jwt_without_verification(token: str):
+    print(f"!!! TOKEN: {token}")
+    # decoded_payload = base64.urlsafe_b64decode(token).decode('utf-8')
+    # print(decoded_payload)
+
+    # decoded = jwt.decode(
+    #     token, 
+    #     options={
+    #         "verify_signature": False 
+    #     }
+    # )
+    # return decoded
+    return token
