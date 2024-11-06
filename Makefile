@@ -2,8 +2,7 @@ install:
 	poetry install
 
 dev: install
-	docker-compose -f docker/docker-compose-dev.yml --project-directory . up --build -d
-	poetry run python src/main.py
+	docker compose -f docker/docker-compose-dev.yml --project-directory . up --build -d
 
 revision:
 	poetry run alembic revision --autogenerate

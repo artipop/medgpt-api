@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     google_revoke_url: str = Field(alias="GOOGLE_REVOKE_URL")
     certs_issuer: str = Field(alias="CERTS_ISSUER")
     redirect_google_to_uri: str = Field(alias="REDIRECT_GOOGLE_TO_URI")
+    post_login_redirect_uri: str = Field(alias="POST_LOGIN_REDIRECT_URI")
 
     jwt_signing_key: str = Field(alias="JWT_SIGNING_KEY")
     jwt_encoding_algo: str = Field(alias="JWT_ENCODING_ALGORITHM")

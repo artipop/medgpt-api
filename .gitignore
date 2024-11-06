@@ -34,7 +34,9 @@ archive.zip
 #poetry
 poetry.lock
 .venv
-.env-example
+
+# env
+.env
 
 #alembic
 alembic/versions/*.pyc

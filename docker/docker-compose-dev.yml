@@ -1,10 +1,30 @@
-version: '3.9'
-
 services:
+  app:
+    image: medgpt-fe:0.5
+    ports:
+      - "4200:80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+      - "traefik.http.routers.frontend.entrypoints=web"
+  api:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "${FASTAPI_PORT}:${FASTAPI_PORT}"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=PathPrefix(`/api`)"
+      - "traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/api"
+      - "traefik.http.routers.backend.middlewares=backend-stripprefix"
+      - "traefik.http.services.backend.loadbalancer.server.port=8888"
+      - "traefik.http.routers.backend.entrypoints=web"
   db:
-    image: postgres:13.8-bullseye
-    container_name: ${PROJECT_TITLE}-db
-    restart: always
+    image: postgres:15-bullseye
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -13,6 +33,16 @@ services:
       - ${PROJECT_TITLE}-db:/var/lib/postgresql/data
     ports:
       - "${POSTGRES_PORT}:5432"
+  traefik:
+    image: traefik:v3.2
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
 
 volumes:
   medgpt-api-db:  # here we can't use variable substitution, so we set it obviously :(
