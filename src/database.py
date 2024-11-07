@@ -76,6 +76,7 @@ class AbstractRepository(ABC):
         return result.rowcount
 
     async def get_by_filter(self, kwargs):
+        print(kwargs)
         query = select(self.model).filter_by(**kwargs)
         result = await self._session.execute(query)
         return result.scalars().all()

@@ -40,7 +40,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# app.include_router(native_auth_router)    
+app.include_router(native_auth_router)    
 app.include_router(google_auth_router)
 app.include_router(chat_router)
 

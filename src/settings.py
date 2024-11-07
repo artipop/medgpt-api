@@ -8,8 +8,8 @@ from pydantic import (
 
 base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
-ACCESS_TOKEN_EXPIRE_MINUTES = 5
-REFRESH_TOKEN_EXPIRE_MINUTES = 15
+ACCESS_TOKEN_EXPIRE_MINUTES = 1
+REFRESH_TOKEN_EXPIRE_MINUTES = 1
 
 
 class NativeAuthJWT(BaseModel):

@@ -3,19 +3,21 @@ from fastapi import Request
 from enum import Enum
 from common.auth.exceptions import AuthException
 from settings import settings
+from enum import Enum as PyEnum
 
-class AuthScheme(Enum):
-    GOOGLE = "https://accounts.google.com"
+
+class AuthType(PyEnum):
     NATIVE = settings.api_base_url
+    GOOGLE = "https://accounts.google.com"
 
 
-def determine_auth_scheme(token_payload: str) -> AuthScheme:
+def determine_auth_scheme(token_payload: str) -> AuthType:
     issuer = token_payload.get("iss")
     if not issuer:
         raise AuthException("Auth token does not contain issuer")
     
     try: 
-        return AuthScheme(issuer)
+        return AuthType(issuer)
     
     except ValueError as e:
         raise AuthException("Unknown token issuer")

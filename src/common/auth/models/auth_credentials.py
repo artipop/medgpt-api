@@ -12,10 +12,6 @@ from enum import Enum as PyEnum
 from database import Base
 
 
-class AuthType(PyEnum):
-    PASSWORD = "password"
-    GOOGLE = "google"
-
 class AuthCredentials(Base):
     __tablename__ = 'auth_credentials'
     id: Mapped[UUID] = mapped_column(UUID, primary_key=True, default=uuid.uuid4)

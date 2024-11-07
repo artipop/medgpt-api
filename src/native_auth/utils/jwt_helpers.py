@@ -1,13 +1,14 @@
 import jwt
 from settings import settings
-from typing import Dict
+from typing import Dict, Union
 from datetime import datetime, timezone, timedelta
-from native_auth.exceptions import NativeAuthException
+from common.auth.exceptions import AuthException
 from enum import Enum
-from users.schemas.naitve_user_schemas import (
+from native_auth.schemas.user import (
     UserCreatePlainPassword, 
     UserCreateHashedPassword, 
-    UserLogin, 
+    UserLogin,
+    UserFromToken,
     UserOut, 
     UserInDB
 )
@@ -17,18 +18,20 @@ from pprint import pprint
 TOKEN_TYPE_FIELD = "type"
 
 class TokenType(Enum):
+    ID = "id"
     ACCESS = "access"
     REFRESH = "refresh"
 
 
-def create_access_token(user: UserOut) -> str:
+def create_access_token(user: Union[UserOut, UserFromToken]) -> str:
     jwt_payload = {
         "sub": str(user.id),
         "email": user.email,
         "is_verified": user.is_verified,
+        "iss": settings.api_base_url
     }
     return create_jwt(
-        token_type=TokenType.ACCESS, 
+        token_type=TokenType.ID, 
         token_data=jwt_payload,
         
     )
@@ -39,6 +42,7 @@ def create_refresh_token(user: UserOut):
         "sub": str(user.id),
         "email": user.email,
         "is_verified": user.is_verified,
+        "iss": settings.api_base_url
     }
     return create_jwt(token_type=TokenType.REFRESH, token_data=jwt_payload)
 
@@ -97,12 +101,12 @@ def decode_jwt(
         )
         
     except jwt.ExpiredSignatureError as e:
-        raise NativeAuthException(
+        raise AuthException(
             detail = "token expired"
         )
 
     except jwt.InvalidTokenError as e:
-        raise NativeAuthException(
+        raise AuthException(
             detail = "token validation failed"
         ) 
     

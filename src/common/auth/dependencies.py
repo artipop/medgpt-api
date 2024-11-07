@@ -1,17 +1,21 @@
-from fastapi import Request, Depends
+from fastapi import Request, Response, Depends
 from common.auth.utils import (
-    AuthScheme,
+    AuthType,
     get_auth_from_cookie,
     determine_auth_scheme,
     decode_jwt_without_verification
 )
+from common.logger import logger
+
+
 from common.auth.exceptions import AuthException
 
 from google_auth.dependencies import authenticate as authenticate_google
 from native_auth.dependencies import authenticate as authenticate_native
 
-from database import get_session
 
+
+from database import get_session
 
 
 def preprocess_auth(request: Request):
@@ -21,21 +25,26 @@ def preprocess_auth(request: Request):
 
     return id_token, id_token_payload, auth_scheme
 
-def authenticate(
+
+async def authenticate(
         request: Request,
+        response: Response,
         session=Depends(get_session) # TODO(weldonfe): determine type hint here, maybe posgresql.async_session or smth?...
     ):
 
     id_token, id_token_payload, auth_scheme = preprocess_auth(request=request)
 
     try: 
-        if auth_scheme == AuthScheme.GOOGLE:
-            user = authenticate_google(id_token, session)
-        
-        elif auth_scheme == AuthScheme.NATIVE:
-            user = authenticate_native(id_token, session) 
+        if auth_scheme == AuthType.GOOGLE:
+            user = await authenticate_google(id_token, response, session)
+            logger.critical("TRYING AUTH WITH GOOGLE")
+
+        elif auth_scheme == AuthType.NATIVE:
+            logger.critical("TRYING AUTH WITH NATIVE")
+            user = await authenticate_native(id_token, response, session) 
     
-    except Exception: # TODO(weldonfe): need to specify wich exceptions can be raised here
+    except Exception as e: # TODO(weldonfe): need to specify wich exceptions can be raised here
+        logger.critical(e)
         raise AuthException(
             detail="Not authenticated"
         )    
