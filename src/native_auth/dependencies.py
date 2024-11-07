@@ -8,7 +8,6 @@ from users.schemas.naitve_user_schemas import (
 from fastapi import Depends, Request
 from native_auth.utils.jwt_helpers import (
     decode_jwt, 
-    decode_jwt_without_verification, 
     TokenType, 
     TOKEN_TYPE_FIELD
 )
@@ -18,7 +17,11 @@ from native_auth.exceptions import NativeAuthException
 from settings import settings
 from users.services.native_user_service import NativeUserService
 from database import get_session
+from common.auth.utils import get_auth_from_cookie
 from pprint import pprint
+
+
+async def authenticate(): pass
 
 
 async def valiadate_auth_user(
@@ -42,21 +45,7 @@ async def valiadate_auth_user(
     user_out = UserOut.model_validate(user_from_db.model_dump(exclude={"password_hash"}))
     return user_out
 
-# TODO(weldonfe): generalize two funcs below
-def get_auth_from_header(request: Request) -> str:
-    authorization = request.headers.get("Authorization", "")
-    scheme, separator, token = authorization.partition(" ")
-    if not authorization or scheme.lower() != "bearer":
-        raise NativeAuthException("invalid auth header")
-    return token
 
-
-def get_auth_from_cookie(request: Request):
-    authorization = request.cookies.get("Authorization", "")
-    scheme, separator, token = authorization.partition(" ")
-    if not authorization or scheme.lower() != "bearer":
-        raise NativeAuthException("invalid auth cookie")
-    return token
 
 
 def get_refresh_token_payload(
@@ -67,10 +56,9 @@ def get_refresh_token_payload(
 
 
 def get_access_token_payload(
-    token: str = Depends(get_auth_from_header)
+    token: str = Depends(get_auth_from_cookie)
 ) -> UserOut:
-    unverefied_payload = decode_jwt_without_verification(token)
-    pprint(unverefied_payload)
+    # unverefied_payload = decode_jwt_without_verification(token)
     payload = decode_jwt(token)
     return payload
 

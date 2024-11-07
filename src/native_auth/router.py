@@ -86,16 +86,6 @@ async def auth_refresh_jwt(
     )
 
 
-@router.post("/refresh/", response_model=TokenInfo, response_model_exclude_none=True)
-async def auth_refresh_jwt(
-    user: UserOut = Depends(get_current_auth_user_for_refresh)
-):
-    access_token = create_access_token(user)
-
-    return TokenInfo(
-        access_token=access_token,
-    )
-
 @router.post("/logout/")
 async def unset_auth_cookie(response: Response):
     response.delete_cookie(key="Authorization", httponly=True, secure=True)

@@ -9,29 +9,24 @@ from google_auth.services.oidc_service import OIDCService
 from google_auth.exceptions import OpenIDConnectException
 from google_auth.schemas.oidc_user import UserInfoFromIDProvider
 from google_auth.utils.state_storage import StateStorage
-from google_auth.utils.security_handler import OpenIDConnectHandler
 from google_auth.utils.id_provider_certs import IdentityProviderCerts
 from google_auth.utils.requests import (
     get_user_info_from_provider,
     get_new_tokens,
 )
-from native_auth.utils.jwt_helpers import (
-    decode_jwt_without_verification, 
-)
+
 from pprint import pprint
 
-security_scheme = OpenIDConnectHandler(settings)
 state_storage = StateStorage() # TODO(weldonfe): refactor somehow later, maybe to Redis storage?
 
 
+async def authenticate(): pass
+
 async def authenticate(
     response: Response,
-    session = Depends(get_session),
-    token: str = Depends(security_scheme)
+    token: str,
+    session = Depends(get_session)
 ):
-    token_payload = decode_jwt_without_verification(token)
-    pprint(token_payload)
-
     is_token_expired = await OIDCService(session).is_token_expired(token)
     try:
         if is_token_expired:
@@ -81,7 +76,8 @@ async def validate_id_token(id_token: str, access_token: str) -> UserInfoFromIDP
     if id token can't be successfuly decoded with access token and google client id,
     than id token is incorrect
     reference: https://developers.google.com/identity/openid-connect/openid-connect?hl=ru#validatinganidtoken
-    """                
+    """
+    # TODO(weldonfe): rewrite that code to jwt lib instead of jose
     def decode_id_token(id_token: str, access_token: str, cert: Dict):
         token_id_payload = jwt.decode(
             token=id_token,
@@ -103,7 +99,7 @@ async def validate_id_token(id_token: str, access_token: str) -> UserInfoFromIDP
         
         return user_data
     
-    except (HTTPException, JWTError) as e:
+    except (HTTPException, JWTError) as e:  
         logger.warinig(e)
         raise OpenIDConnectException(deatail="Id token validation failed")
 

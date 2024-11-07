@@ -10,7 +10,7 @@ from common.logger import logger
 from common.http_client import HttpClient
 from google_auth.utils.id_provider_certs import IdentityProviderCerts
 # routers
-from native_auth.router import router as auth_router
+from native_auth.router import router as native_auth_router
 from google_auth.router import router as google_auth_router
 from chat.router import router as chat_router
 
@@ -41,7 +41,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth_router)
+# app.include_router(native_auth_router)    
 app.include_router(google_auth_router)
 app.include_router(chat_router)
 

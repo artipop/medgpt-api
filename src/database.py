@@ -82,7 +82,7 @@ class AbstractRepository(ABC):
 
     async def delete_by_value(self, field_name, value):
         field = getattr(self.model, field_name)
-        stmt = delete(self.model).where(field == value)
+        stmt = delete(self.model).where(field == value).returning(self.model)
         result = await self._session.execute(stmt)
 
-        return result.rowcount
+        return result.scalars().all()

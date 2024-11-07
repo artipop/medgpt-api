@@ -5,6 +5,7 @@ from settings import settings
 from common.http_client import HttpClient
 from google_auth.exceptions import OpenIDConnectException
 
+from pprint import pprint
 
 async def get_user_info_from_provider(token: str) -> Dict:
     """   
@@ -53,15 +54,22 @@ async def exchage_code_to_tokens(code: str) -> Dict[str, str]:
         "client_secret": settings.google_client_secret,
         "redirect_uri": settings.redirect_google_to_uri,
         "grant_type": "authorization_code",
+        "prompt": "consent",
+        "access_type": "offline"
     }
+
     async with http_session.post(url=settings.google_token_url, 
                                  data=exchange_request_payload) as token_resp:
-        
+        print(token_resp.url)
         if token_resp.status != 200:
             raise OpenIDConnectException(
                 detail="Failed to exchange code for token"
             )
         response_data = await token_resp.json()
+        print(10 * "=" + "token payload from provider" + 10 * "=")
+        pprint(response_data)
+        print(10 * "=" + "token payload from provider" + 10 * "=")
+
         return (
             response_data.get("access_token"),
             response_data.get("refresh_token"),

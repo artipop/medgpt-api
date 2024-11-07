@@ -37,7 +37,7 @@ Checks for the access token, but does not validate something in any way.
 do not use anywhere else besides them
 
 """
-
+from typing import Optional
 from fastapi import APIRouter, Depends, Request, Response, HTTPException
 from fastapi.responses import RedirectResponse
 
@@ -45,12 +45,21 @@ from database import get_session
 from settings import settings
 from common.logger import logger
 
+
 from google_auth.dependencies import state_storage, authenticate, validate_id_token
 from google_auth.utils.requests import exchage_code_to_tokens, revoke_token
-from google_auth.dependencies import security_scheme
-from google_auth.services.oidc_service import OIDCService
-from google_auth.exceptions import OpenIDConnectException
-from google_auth.schemas.oidc_user import OIDCUserRead
+from google_auth.schemas.oidc_user import UserInfoFromIDProvider
+
+from common.auth.utils import decode_jwt_without_verification 
+from common.auth.exceptions import AuthException
+from common.auth.schemas.token import TokenFromIDProvider
+
+from common.auth.services.auth_service import AuthService
+from common.auth.dependencies import preprocess_auth
+
+
+
+
 from pprint import pprint
 
 router = APIRouter(
@@ -72,50 +81,56 @@ async def redicrect_to_google_auth() -> str:
         f"client_id={settings.google_client_id}&"
         f"redirect_uri={settings.redirect_google_to_uri}&"
         f"scope=openid%20profile%20email&"
-        f"&state={jwt_token}&"
-        f"access_type=offline" # to get refresh token
+        f"state={jwt_token}&"
+        f"prompt=consent&"
+        f"access_type=offline&" # to get refresh token
     )
 
 
 @router.get("/callback", response_class=RedirectResponse)
 async def auth_callback(
-    code: str,
     request: Request,
+    code: Optional[str]=None,
+    error: Optional[str]=None,
     state: str=Depends(state_storage.validate),
     session=Depends(get_session)
 ):    
-    try: 
-        access_token, refresh_token, id_token = await exchage_code_to_tokens(code)
-        user_data_from_token_id = await validate_id_token(id_token, access_token)
+    try:
+        if error or not code:
+            raise HTTPException(
+                status_code=401,
+                detail="No code transmitted from id provider"
+            )
         
-        await OIDCService(session).get_or_create_user(
-            user_data = user_data_from_token_id,
-            access_token=access_token,
-            refresh_token=refresh_token
+        access_token, refresh_token, id_token = await exchage_code_to_tokens(code)
+        user_data_from_id_token = await validate_id_token(id_token, access_token)
+        
+        await AuthService(session).get_or_create_oidc_user(
+            user_data=user_data_from_id_token,
+            token_data=TokenFromIDProvider(token=refresh_token)
         )
 
-        # NOTE(weldonfe): if we want to use header instead of cookie:
-        # 1. rewrite here, to return access_token directly and change response type to str in route decorator
-        # 2. change default transport method in google_auth.utils.security_handler.OpenIDConnectHandler
         response = RedirectResponse(url="/docs") # TODO(weldonfe): change redirection route to actual frontend
         response.set_cookie(
-            key="Authorization",
-            value=f"Bearer {access_token}",
+            key="session_id",
+            value=f"Bearer {id_token}",
             httponly=True,  # to prevent JavaScript access
             secure=True,
         )
+
+
         return response
     
     except HTTPException as e:
         logger.warning(e)
-        raise OpenIDConnectException(detail="Not authenticated")
+        raise AuthException(detail="Not authenticated")
 
 
 @router.get("/logout")
 async def logout(
     response: Response, 
-    token: str = Depends(security_scheme),
-    session=Depends(get_session)
+    request: Request,
+    session = Depends(get_session)
 ):
     """
     does not werify user identity
@@ -123,34 +138,44 @@ async def logout(
     deletes access_token from cookies
     searches for corresponding refresh token in db and deletes both access and refresh
     """
+    id_token, id_token_payload, auth_scheme = preprocess_auth(request=request)
+    
+    deleted_tokens = await AuthService(session).logout_oidc_user(
+        UserInfoFromIDProvider(
+            email=id_token_payload.get("email", "")
+        )
+    )
 
-    deleted_tokens = await OIDCService(session).logout(token)
     if deleted_tokens:
-        for token in deleted_tokens:
+        for token_data in deleted_tokens:
             try:
-                await revoke_token(token)
+                await revoke_token(token_data.token)
             except Exception as e: # token might be expired or allready revoked
                 pass
     
-    response.delete_cookie(key="Authorization", httponly=True, secure=True)
+    response.delete_cookie(
+        key="session_id", 
+        httponly=True, 
+        secure=True
+    )
     
     #TODO(weldonfe): uncomment and change redirection route in row below 
     # return RedirectResponse(url="/google-auth/login")
 
 
-@router.get("/try_auth", response_model=OIDCUserRead)
+# @router.get("/try_auth", response_model=OIDCUserRead)
 
-async def get_refresh_token(
-    oidc_user=Depends(authenticate),
-    session=Depends(get_session)
-):
-    """
-    endpoint to test auth, 
-    when requested by authenticated user
-    should return existing user info from provider with addition of primary key from db table oidc_users   
-    """
-    user_data = await OIDCService(session).get_user(user_data=oidc_user)
-    return user_data
+# async def get_refresh_token(
+#     oidc_user=Depends(authenticate),
+#     session=Depends(get_session)
+# ):
+#     """
+#     endpoint to test auth, 
+#     when requested by authenticated user
+#     should return existing user info from provider with addition of primary key from db table oidc_users   
+#     """
+#     user_data = await OIDCService(session).get_user(user_data=oidc_user)
+#     return user_data
 
 
 
