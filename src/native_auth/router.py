@@ -3,23 +3,23 @@ from native_auth.schemas.token import TokenInfo
 from native_auth.utils.password_helpers import hash_password
 from native_auth.dependencies import (
     valiadate_auth_user, 
-    get_current_verified_auth_user, 
-    get_current_auth_user_for_refresh
 )
 from database import get_session
 from native_auth.utils.jwt_helpers import create_access_token, create_refresh_token
-from native_auth.exceptions import NativeAuthException
-from users.services.native_user_service import NativeUserService
-from users.schemas.naitve_user_schemas import (
+
+
+from native_auth.schemas.user import (
     UserCreatePlainPassword, 
     UserCreateHashedPassword, 
     UserOut, 
 )
-
+from common.auth.services.auth_service import AuthService 
 from pprint import pprint
 
+from common.auth.dependencies import preprocess_auth, authenticate
+
 router = APIRouter(
-    prefix="/auth/native",
+    prefix="/native-auth",
     tags=["native auhorization"]
 )
 
@@ -37,10 +37,10 @@ async def register_user(
     session=Depends(get_session) # TODO: add type hint
 ):
     # if user already exists, 401 exc will be raised 
-    existing_user_data = await NativeUserService(session).check_user_existence_on_register(user_data)
+    existing_user_data = await AuthService(session).check_user_existence_on_native_register(user_data)
     
     password_hash = hash_password(user_data.password)
-    registred_user_data = await NativeUserService(session).create_user(
+    registred_user_data = await AuthService(session).register_native_user(
         UserCreateHashedPassword(
             email=user_data.email,
             password_hash=password_hash
@@ -52,41 +52,54 @@ async def register_user(
 @router.post("/login/")
 async def auth_user_issue_jwt(
     response: Response,
-    user: UserOut = Depends(valiadate_auth_user)
+    user: UserOut = Depends(valiadate_auth_user),
+    session=Depends(get_session)
 ): 
-    access_token = create_access_token(user)
+    
+    id_token = create_access_token(user)
     refresh_token = create_refresh_token(user)
 
+    await AuthService(session).update_refresh_token(
+        user_id=user.id,
+        token=refresh_token
+    )
+
     response.set_cookie(
-        key="Authorization", 
-        value=f"Bearer {refresh_token}"
+        key="session_id",
+        value=f"Bearer {id_token}",
+        httponly=True,  # to prevent JavaScript access
+        secure=True,
     )
-    
-    return TokenInfo(
-        access_token=access_token,
-    )
+
 
 
 @router.get("/users/me/")
 async def auth_user_check_self_info(
-    user: UserOut = Depends(get_current_verified_auth_user)
+    user: UserOut = Depends(authenticate)
 ):
     print(type(user))
     return user
 
 
-@router.post("/refresh/", response_model=TokenInfo, response_model_exclude_none=True)
-async def auth_refresh_jwt(
-    user: UserOut = Depends(get_current_auth_user_for_refresh)
-):
-    access_token = create_access_token(user)
+# @router.post("/refresh/", response_model=TokenInfo, response_model_exclude_none=True)
+# async def auth_refresh_jwt(
+#     user: UserOut = Depends(get_current_auth_user_for_refresh)
+# ):
+#     access_token = create_access_token(user)
 
-    return TokenInfo(
-        access_token=access_token,
-    )
+#     return TokenInfo(
+#         access_token=access_token,
+#     )
 
 
 @router.post("/logout/")
 async def unset_auth_cookie(response: Response):
-    response.delete_cookie(key="Authorization", httponly=True, secure=True)
-    return {"message": "Secure cookie has been deleted!"}
+    id_token, id_token_payload, auth_scheme = preprocess_auth(request=request)
+    
+    
+    
+    response.delete_cookie(
+        key="session_id", 
+        httponly=True, 
+        secure=True
+    )

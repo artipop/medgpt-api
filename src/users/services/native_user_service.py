@@ -16,7 +16,7 @@ class NativeUserService:
         self.session = session
 
     # async def check_user_existence_on_register(self, user_data: UserCreatePlainPassword):
-    #     if existing_user := await NativeUserRepository(self.session).check_user_existence(user_data):
+        # if existing_user := await NativeUserRepository(self.session).check_user_existence(user_data):
     #         raise NativeAuthException(
     #             detail="User with provided email address already exists"
     #         )
