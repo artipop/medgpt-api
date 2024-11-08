@@ -1,5 +1,6 @@
 from settings import settings
-from google_auth.exceptions import StateTokenException
+from common.auth.exceptions import AuthException
+
 from jose import jwt
 import uuid
 
@@ -30,9 +31,9 @@ class StateStorage:
             ).get("state")
             
             if state_from_response not in self.storage:
-                raise StateTokenException(detail="Incorrect state token provided")
+                raise AuthException(detail="Incorrect state token provided")
             
             self.storage.pop()
 
         except jwt.JWTError:
-            raise StateTokenException(detail="Couldn't decode state token")
+            raise AuthException(detail="Couldn't decode state token")

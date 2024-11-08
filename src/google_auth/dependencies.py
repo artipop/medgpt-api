@@ -1,28 +1,21 @@
 from fastapi import Response, Depends, HTTPException
 from jose import jwt, JWTError
+from datetime import datetime, timezone
 from typing import Dict
 
 from settings import settings
 from database import get_session
-from common.logger import logger
-from google_auth.services.oidc_service import OIDCService
-from google_auth.exceptions import OpenIDConnectException
+
 from google_auth.schemas.oidc_user import UserInfoFromIDProvider
 from google_auth.utils.state_storage import StateStorage
 from google_auth.utils.id_provider_certs import IdentityProviderCerts
-from google_auth.utils.requests import (
-    get_user_info_from_provider,
-    get_new_tokens,
-)
+from google_auth.utils.requests import get_new_tokens, revoke_token
 
-from jose import jwt, JWTError
-from datetime import datetime, timezone
-
-from google_auth.utils.requests import revoke_token
+from common.logger import logger
 from common.auth.schemas.token import TokenType
 from common.auth.services.auth_service import AuthService
 from common.auth.exceptions import AuthException
-from pprint import pprint
+
 
 state_storage = StateStorage() # TODO(weldonfe): refactor somehow later, maybe to Redis storage?
 
@@ -34,7 +27,6 @@ async def authenticate(
 ):
     email_from_unverified_payload  = jwt.get_unverified_claims(id_token).get("email", "")
     if is_id_token_expired(id_token):
-        logger.critical("GOING TO RENEW OIDC TOKENS")
         access_token, id_token = await rotate_tokens(
             user_email=email_from_unverified_payload,
             session=session
@@ -54,40 +46,12 @@ async def authenticate(
 
 
     try:
-        user_data = await validate_id_token(id_token, access_token)
+        user_from_token = await validate_id_token(id_token, access_token)
+        user_data = await AuthService(session).get_user_by_mail(user_from_token.email)
         return user_data
 
     except Exception as e: #specify exception or token exp validation here
         raise AuthException("Smth wrng with token!")
-
-
-
-    # async def authenticate(
-#     response: Response,
-#     token: str,
-#     session = Depends(get_session)
-# ):
-    # is_token_expired = await OIDCService(session).is_token_expired(token)
-#     try:
-#         if is_token_expired:
-            # reneved_access_token = await refresh_token(session, token)
-#             token = reneved_access_token
-            
-#             response.delete_cookie(key="Authorization", httponly=True, secure=True)
-#             response.set_cookie(
-#                 key="Authorization",
-#                 value=f"Bearer {reneved_access_token}",
-#                 httponly=True,  # to prevent JavaScript access
-#                 secure=True,
-#             )
-
-#         user_info = await get_user_info_from_provider(token=token)
-#         return UserInfoFromIDProvider(**user_info)
-
-#     except HTTPException as e:
-#         response.delete_cookie(key="Authorization", httponly=True, secure=True)
-#         logger.warning(e)
-#         raise OpenIDConnectException(detail="Not authenticated")
     
 
 async def rotate_tokens(
@@ -102,18 +66,13 @@ async def rotate_tokens(
     renewed_access_token, renewed_id_token = await get_new_tokens(refresh_token)
     
     user = await AuthService(session).get_user_by_mail(email=user_email)
-    logger.critical("HERERERERERERERERERERERERERE")
     await AuthService(session).update_token(
         user_id=user.id,
         token=renewed_access_token,
-        token_type=TokenType.REFRESH.value
+        token_type=TokenType.ACCESS.value
     )
 
     return renewed_access_token, renewed_id_token
-
-
-
-
 
 
 def is_id_token_expired(token: str):
@@ -134,27 +93,6 @@ def is_id_token_expired(token: str):
     return False
 
 
-async def refresh_token(
-    session,
-    access_token_to_refresh,
-):
-    refresh_token = await OIDCService(session).get_refresh_token(access_token_to_refresh)
-    try: 
-        reneved_access_token, reneved_id_token = await get_new_tokens(refresh_token)
-        await validate_id_token(reneved_id_token, reneved_access_token) 
-    
-    except HTTPException as e: # probably refresh token expired too
-        await OIDCService(session).logout(access_token_to_refresh)
-        raise OpenIDConnectException(detail="Not authenticated")
-
-    await OIDCService(session).rotate_access_tokens(
-        expired_token=access_token_to_refresh,
-        renewed_token=reneved_access_token,
-    )
-
-    return reneved_access_token
-
-
 async def validate_id_token(
         id_token: str, 
         access_token: str
@@ -165,6 +103,7 @@ async def validate_id_token(
     reference: https://developers.google.com/identity/openid-connect/openid-connect?hl=ru#validatinganidtoken
     """
     # TODO(weldonfe): rewrite that code to jwt lib instead of jose
+    # NOTE(wedlonfe): all claims have been werified implisitly 
     def decode_id_token(
             id_token: str, 
             access_token: str, 
@@ -177,8 +116,6 @@ async def validate_id_token(
             issuer=settings.certs_issuer,
             access_token=access_token
         )
-        # here we can check expiration date, audience and client id,
-        # but documentation says that it's unnecessary in our case (reference in func desc)
         return UserInfoFromIDProvider(**token_id_payload)
 
     try:
@@ -196,7 +133,7 @@ async def validate_id_token(
     
     except (HTTPException, JWTError) as e:  
         logger.warning(e)
-        raise OpenIDConnectException(detail="Id token validation failed")
+        raise AuthException(detail="Id token validation failed")
     
 
 async def logout(
@@ -215,9 +152,5 @@ async def logout(
                 await revoke_token(token_data.token)
             except Exception as e: # token might be expired or allready revoked
                 pass
-
-    
-        
-
 
 

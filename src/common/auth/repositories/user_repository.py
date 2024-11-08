@@ -1,10 +1,9 @@
-from sqlalchemy import select, delete
+from sqlalchemy import select
 
 from database import AbstractRepository
 from common.auth.models.user import User
 from common.auth.schemas.user import UserCreate 
 from google_auth.schemas.oidc_user import UserInfoFromIDProvider
-from native_auth.schemas.user import UserCreatePlainPassword
 from common.auth.models.auth_credentials import AuthCredentials
 
 class UserRepository(AbstractRepository):

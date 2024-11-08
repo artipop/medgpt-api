@@ -1,34 +1,20 @@
 from fastapi import APIRouter, Depends, Response
-from native_auth.schemas.token import TokenInfo
-from native_auth.utils.password_helpers import hash_password
-from native_auth.dependencies import (
-    valiadate_auth_user, 
-)
+
 from database import get_session
+
 from native_auth.utils.jwt_helpers import create_access_token, create_refresh_token
+from native_auth.utils.password_helpers import hash_password
+from native_auth.dependencies import valiadate_auth_user 
+from native_auth.schemas.user import UserCreatePlainPassword, UserCreateHashedPassword
 
-
-from native_auth.schemas.user import (
-    UserCreatePlainPassword, 
-    UserCreateHashedPassword, 
-    UserOut, 
-)
-from common.auth.services.auth_service import AuthService 
-from pprint import pprint
-
-from common.auth.dependencies import preprocess_auth, authenticate
+from common.auth.services.auth_service import AuthService
+from common.auth.schemas.token import TokenType
+from common.auth.schemas.user import UserRead
 
 router = APIRouter(
     prefix="/native-auth",
     tags=["native auhorization"]
 )
-
-@router.get("/test_router/", response_model=TokenInfo)
-async def say_hello():
-    return {
-        "status_code": 200,
-        "payload": "Hello from FastAPT"
-    }
 
 
 @router.post("/register/")
@@ -52,16 +38,17 @@ async def register_user(
 @router.post("/login/")
 async def auth_user_issue_jwt(
     response: Response,
-    user: UserOut = Depends(valiadate_auth_user),
+    user: UserRead = Depends(valiadate_auth_user),
     session=Depends(get_session)
 ): 
     
     id_token = create_access_token(user)
     refresh_token = create_refresh_token(user)
 
-    await AuthService(session).update_refresh_token(
+    await AuthService(session).update_token(
         user_id=user.id,
-        token=refresh_token
+        token=refresh_token,
+        token_type=TokenType.REFRESH
     )
 
     response.set_cookie(
@@ -73,33 +60,3 @@ async def auth_user_issue_jwt(
 
 
 
-@router.get("/users/me/")
-async def auth_user_check_self_info(
-    user: UserOut = Depends(authenticate)
-):
-    print(type(user))
-    return user
-
-
-# @router.post("/refresh/", response_model=TokenInfo, response_model_exclude_none=True)
-# async def auth_refresh_jwt(
-#     user: UserOut = Depends(get_current_auth_user_for_refresh)
-# ):
-#     access_token = create_access_token(user)
-
-#     return TokenInfo(
-#         access_token=access_token,
-#     )
-
-
-@router.post("/logout/")
-async def unset_auth_cookie(response: Response):
-    id_token, id_token_payload, auth_scheme = preprocess_auth(request=request)
-    
-    
-    
-    response.delete_cookie(
-        key="session_id", 
-        httponly=True, 
-        secure=True
-    )

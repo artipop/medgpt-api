@@ -1,5 +1,5 @@
 from common.singleton import singleton
-from google_auth.exceptions import OpenIDConnectException
+from common.auth.exceptions import AuthException
 from google_auth.utils.requests import get_certs
 
 
@@ -44,7 +44,9 @@ class IdentityProviderCerts:
         cert = self.find_cert_by_kid(kid)
         
         if not cert:
-            raise OpenIDConnectException(deatail="Relevant identity provider cert not found")
+            raise AuthException(
+                deatail="Relevant identity provider cert not found"
+            )
         
         return cert 
 

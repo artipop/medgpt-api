@@ -11,32 +11,15 @@ In case of successful authentication:
 otherwise "401 authenticated" will be returned
 
 2. HOW TO LOGOUT:
-Use endpoint <base_url>/google-auth/logout for authenticated user (cookie with access token must be transmitted)
+Use endpoint <base_url>/common-auth/logout for authenticated user (cookie with access token must be transmitted)
 all tokens for that user will be revoked from identity provider and backend DB
 
 !!! Don't forget to change redirection url in router func to actual url for not authenticated users
 (line should appear smth like: response = RedirectResponse(url=<actual app homepage>))
 
-3. HOW TO REUSE DEPENDENCIES FOR BACKEND ROUTES PROTECTION
-An example of proper usage is the route google_auth/try_auth in this route
-
-There are 2 dependencies implemented in this router for these purposes:
-
-1. authenticate func from google_auth.dependencies:
-The main dependency that allows you to get user gmail from identity provider
-that gmail can be used further to get any data from backend DB
-
-This dependency completely controls the interaction with the identity provider and the token lifecycle, 
-including updating access tokens, verifying the validity of the id token if necessary and managing cookies
-so if it returned 401, then all user auth options have been exhausted and the user needs to be authenticated again
-
-2. security_scheme var from google_auth.dependencies:
-Checks for the access token, but does not validate something in any way. 
-
-!!! It should be used only in service routes that serve the authentication process, 
-do not use anywhere else besides them
-
 """
+
+
 from typing import Optional
 from fastapi import APIRouter, Depends, Request, Response, HTTPException
 from fastapi.responses import RedirectResponse
@@ -46,16 +29,13 @@ from settings import settings
 from common.logger import logger
 
 
-from google_auth.dependencies import state_storage, authenticate, validate_id_token
-from google_auth.utils.requests import exchage_code_to_tokens, revoke_token
-from google_auth.schemas.oidc_user import UserInfoFromIDProvider
+from google_auth.dependencies import state_storage, validate_id_token
+from google_auth.utils.requests import exchage_code_to_tokens
 
-from common.auth.utils import decode_jwt_without_verification 
 from common.auth.exceptions import AuthException
 from common.auth.schemas.token import TokenFromIDProvider
 
 from common.auth.services.auth_service import AuthService
-from common.auth.dependencies import preprocess_auth
 
 
 from pprint import pprint
@@ -123,23 +103,6 @@ async def auth_callback(
     except HTTPException as e:
         logger.warning(e)
         raise AuthException(detail="Not authenticated")
-
-
-# @router.get("/try_auth", response_model=OIDCUserRead)
-
-# async def get_refresh_token(
-#     oidc_user=Depends(authenticate),
-#     session=Depends(get_session)
-# ):
-#     """
-#     endpoint to test auth, 
-#     when requested by authenticated user
-#     should return existing user info from provider with addition of primary key from db table oidc_users   
-#     """
-#     user_data = await OIDCService(session).get_user(user_data=oidc_user)
-#     return user_data
-
-
 
 
     

@@ -4,14 +4,14 @@ from typing import Dict, Union
 from datetime import datetime, timezone, timedelta
 from common.auth.exceptions import AuthException
 from enum import Enum
+from common.auth.schemas.user import UserRead, UserInDB
 from native_auth.schemas.user import (
     UserCreatePlainPassword, 
     UserCreateHashedPassword, 
     UserLogin,
     UserFromToken,  
-    UserOut, 
-    UserInDB
 )
+
 import base64
 from pprint import pprint
 
@@ -23,7 +23,7 @@ class TokenType(Enum):
     REFRESH = "refresh"
 
 
-def create_access_token(user: Union[UserOut, UserFromToken]) -> str:
+def create_access_token(user: Union[UserRead, UserFromToken]) -> str:
     jwt_payload = {
         "sub": str(user.id),
         "email": user.email,
@@ -37,7 +37,7 @@ def create_access_token(user: Union[UserOut, UserFromToken]) -> str:
     )
 
 
-def create_refresh_token(user: UserOut):
+def create_refresh_token(user: UserRead):
     jwt_payload = {
         "sub": str(user.id),
         "email": user.email,
