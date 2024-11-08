@@ -76,10 +76,14 @@ class AbstractRepository(ABC):
         return result.rowcount
 
     async def get_by_filter(self, kwargs):
-        print(kwargs)
         query = select(self.model).filter_by(**kwargs)
         result = await self._session.execute(query)
         return result.scalars().all()
+
+    async def get_one_by_filter(self, kwargs):
+        query = select(self.model).filter_by(**kwargs)
+        result = await self._session.execute(query)
+        return result.scalars().one_or_none()
 
     async def delete_by_value(self, field_name, value):
         field = getattr(self.model, field_name)

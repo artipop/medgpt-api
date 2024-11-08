@@ -15,5 +15,5 @@ class User(Base):
     # TODO(weldonde): change is_verified default value to False when finish testing
     is_verified: Mapped[bool] = mapped_column(Boolean, default=True)
     
-    refresh_tokens = relationship("RefreshToken", back_populates="user")
+    tokens = relationship("Token", back_populates="user")
     auth_credentials = relationship("AuthCredentials", back_populates="user")

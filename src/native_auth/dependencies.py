@@ -42,9 +42,6 @@ async def authenticate(id_token: str, response: Response, session=Depends(get_se
             httponly=True,  # to prevent JavaScript access
             secure=True,
         )
-    # !!!!!!! STOPS HERE
-        
-    logger.warning("JWT DECODING PASS")
 
     logger.warning(payload)
     validate_token_type(payload=payload, token_type=TokenType.ID)
@@ -77,8 +74,8 @@ async def valiadate_auth_user(
     ): 
         raise NativeAuthException(detail="invalid username or password")
     
-    # if not user_from_db.is_verified: # TODO(weldonfe): how to handle that?
-    #     raise NativeAuthException(detail="provided user is not verified")
+    if not user_from_db.is_verified: # TODO(weldonfe): how to handle that?
+        raise AuthException("User not verified")
     
     # # explist cast required here
     user_out = UserOut.model_validate(user_from_db.model_dump(exclude={"password_hash"}))
@@ -86,6 +83,7 @@ async def valiadate_auth_user(
 
 
 async def refresh_token(id_token: str, response: Response, session):
+    logger.critical("REFRESHING ID TOKEN")
     unverified_user_data = decode_jwt_without_verification(token=id_token)
     refresh_token = await AuthService(session).get_refresh_token_by_user_id(
         user_id=unverified_user_data.get("sub", "")
@@ -117,17 +115,24 @@ async def refresh_token(id_token: str, response: Response, session):
     return id_token
 
 
-
-
-
-
-
 def validate_token_type(payload: Dict, token_type: TokenType) -> bool:
     token_type_from_payload: TokenType = TokenType(payload.get(TOKEN_TYPE_FIELD))
     if token_type_from_payload == token_type:
         return True
     
     raise AuthException(detail="invalid token type")
+
+
+async def logout(
+    id_token_payload: Dict, 
+    session=Depends(get_session)
+):
+    deleted_tokens = await AuthService(session).logout_native_user(
+        user_id=id_token_payload.get("sub", "")
+    )
+    
+    
+    
 
 
 

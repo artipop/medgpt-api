@@ -8,7 +8,7 @@ from native_auth.schemas.user import (
     UserCreatePlainPassword, 
     UserCreateHashedPassword, 
     UserLogin,
-    UserFromToken,
+    UserFromToken,  
     UserOut, 
     UserInDB
 )
