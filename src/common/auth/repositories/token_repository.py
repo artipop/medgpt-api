@@ -1,10 +1,8 @@
-from sqlalchemy import select, delete
-
 from database import AbstractRepository
-from common.auth.models.token import Token
-from google_auth.schemas.oidc_user import UserInfoFromIDProvider, OIDCUserCreate
 
+from common.auth.models.token import Token
 from common.auth.schemas.token import TokenCreate
+
 
 class TokenRepository(AbstractRepository):
     model = Token

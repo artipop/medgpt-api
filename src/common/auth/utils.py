@@ -1,12 +1,13 @@
 import jwt
 from fastapi import Request
 from enum import Enum
-from common.auth.exceptions import AuthException
+
+
 from settings import settings
-from enum import Enum as PyEnum
+from common.auth.exceptions import AuthException
 
 
-class AuthType(PyEnum):
+class AuthType(Enum):
     NATIVE = settings.api_base_url
     GOOGLE = "https://accounts.google.com"
 

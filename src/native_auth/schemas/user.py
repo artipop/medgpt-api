@@ -24,17 +24,3 @@ class UserFromToken(BaseModel):
     id: UUID = Field(alias="sub")
     email: EmailStr
     is_verified: bool
-
-
-class UserOut(BaseModel):
-    id: UUID
-    email: EmailStr
-    created_at: datetime
-    is_verified: bool
-
-    class Config:
-        from_attributes = True
-
-
-class UserInDB(UserOut):
-    password_hash: bytes = Field(..., min_length=6)

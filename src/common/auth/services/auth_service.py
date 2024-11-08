@@ -1,9 +1,6 @@
-from datetime import datetime, timezone
 from typing import Union
 from google_auth.schemas.oidc_user import UserInfoFromIDProvider
-# from google_auth.schemas.oidc_user import OIDCUserRead, OIDCUserCreate
 
-from google_auth.exceptions import DBException
 
 from common.auth.repositories.user_repository import UserRepository
 from common.auth.repositories.token_repository import TokenRepository
@@ -13,15 +10,12 @@ from common.auth.utils import AuthType
 from common.auth.exceptions import AuthException
 from common.auth.schemas.token import TokenFromIDProvider, TokenCreate, TokenRead, TokenType
 from common.auth.schemas.auth_credentials import AuthCredentialsCreate
-from common.auth.schemas.user import UserCreate, UserRead
+from common.auth.schemas.user import UserCreate, UserRead, UserInDB
 
 from native_auth.schemas.user import (
     UserCreatePlainPassword, 
     UserCreateHashedPassword, 
-    UserLogin, 
-    UserOut, 
-    UserInDB,
-    UserFromToken
+
 )
 
 
@@ -36,6 +30,11 @@ class AuthService:
         )
         if user_db_ans:
             return UserRead.model_validate(user_db_ans, from_attributes=True)
+        
+    
+    async def get_user_by_id(self, user_id: str):
+        user_db_answer = await UserRepository(self.session).get_by_id(user_id)
+        return UserRead.model_validate(user_db_answer)
     
 
     async def get_or_create_oidc_user(
@@ -153,7 +152,7 @@ class AuthService:
 
         await self.session.commit()
 
-        return UserOut.model_validate(user_db_answer)
+        return UserRead.model_validate(user_db_answer)
     
 
     async def get_native_user_by_mail(
@@ -177,9 +176,6 @@ class AuthService:
         return existing_user
     
 
-
-
-
     async def update_token(
         self,
         user_id: str,
@@ -195,11 +191,6 @@ class AuthService:
         )
         await self.session.commit()
 
-    
-    async def get_user_by_id(self, user_id: str):
-        user_db_answer = await UserRepository(self.session).get_by_id(user_id)
-        return UserOut.model_validate(user_db_answer)
-    
 
     async def get_refresh_token_by_user_id(self, user_id: str):
         token_db_answer = await TokenRepository(self.session).get_by_filter(

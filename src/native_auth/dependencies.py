@@ -1,32 +1,25 @@
-import jwt
-
 from typing import Dict
-from native_auth.schemas.user import (
-    UserLogin, 
-    UserOut,
-    UserFromToken,
-    UserInDB
-)
-from fastapi import Depends, Request, Response
+
+from settings import settings
+from database import get_session
+
+from fastapi import Depends, Response
 from native_auth.utils.jwt_helpers import (
     decode_jwt,
     TokenType, 
     TOKEN_TYPE_FIELD
 )
 
-
+from native_auth.schemas.user import UserLogin, UserFromToken
 from native_auth.utils.password_helpers import validate_password
-from native_auth.exceptions import NativeAuthException
-from settings import settings
-from users.services.native_user_service import NativeUserService
-from database import get_session
-from common.auth.utils import get_auth_from_cookie, decode_jwt_without_verification
 from native_auth.utils.jwt_helpers import create_access_token
-from pprint import pprint
 
+from common.auth.schemas.user import UserRead, UserInDB
+from common.auth.utils import decode_jwt_without_verification
 from common.auth.services.auth_service import AuthService
 from common.auth.exceptions import AuthException
 from common.logger import logger
+
 
 
 async def authenticate(id_token: str, response: Response, session=Depends(get_session)):
@@ -43,16 +36,12 @@ async def authenticate(id_token: str, response: Response, session=Depends(get_se
             secure=True,
         )
 
-    logger.warning(payload)
     validate_token_type(payload=payload, token_type=TokenType.ID)
     
-    logger.warning("TOKEN TYPE VALIDATION PASS")
     user_from_token: UserFromToken = UserFromToken(**payload)
-    logger.warning("CAST TO USER FROM TOKEN PASS")
 
 
-    user_from_db: UserOut = await AuthService(session).get_user_by_id(user_id=user_from_token.id)
-    logger.warning("RECEIVING USER FROM DB PASS")
+    user_from_db: UserRead = await AuthService(session).get_user_by_id(user_id=user_from_token.id)
 
     if not user_from_db.is_verified:
         raise AuthException("User not verified")
@@ -72,18 +61,17 @@ async def valiadate_auth_user(
         password=user.password,
         password_hash=user_from_db.password_hash
     ): 
-        raise NativeAuthException(detail="invalid username or password")
+        raise AuthException(detail="invalid username or password")
     
     if not user_from_db.is_verified: # TODO(weldonfe): how to handle that?
         raise AuthException("User not verified")
     
     # # explist cast required here
-    user_out = UserOut.model_validate(user_from_db.model_dump(exclude={"password_hash"}))
+    user_out = UserRead.model_validate(user_from_db.model_dump(exclude={"password_hash"}))
     return user_out
 
 
 async def refresh_token(id_token: str, response: Response, session):
-    logger.critical("REFRESHING ID TOKEN")
     unverified_user_data = decode_jwt_without_verification(token=id_token)
     refresh_token = await AuthService(session).get_refresh_token_by_user_id(
         user_id=unverified_user_data.get("sub", "")
@@ -130,7 +118,7 @@ async def logout(
     deleted_tokens = await AuthService(session).logout_native_user(
         user_id=id_token_payload.get("sub", "")
     )
-    
+
     
     
 

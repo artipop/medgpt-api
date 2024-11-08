@@ -16,7 +16,7 @@ from database import get_session
 
 
 def preprocess_auth(request: Request):
-    id_token = get_auth_from_cookie(request, "session_id")
+    id_token = get_auth_from_cookie(request=request, cookie_name="session_id")
     id_token_payload = decode_jwt_without_verification(id_token)
     auth_scheme = determine_auth_scheme(id_token_payload)
 

@@ -16,7 +16,6 @@ from chat.router import router as chat_router
 
 from common.auth.router import router as common_auth_router
 
-from native_auth.utils.jwt_helpers import encode_jwt, decode_jwt
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

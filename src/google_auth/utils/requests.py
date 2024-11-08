@@ -6,6 +6,7 @@ from common.http_client import HttpClient
 from common.auth.exceptions import AuthException
 from pprint import pprint
 
+
 async def get_user_info_from_provider(token: str) -> Dict:
     """   
     Requests user information from OpenID provider (Google auth server) 
