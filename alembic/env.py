@@ -15,12 +15,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../s
 from settings import settings
 from database import Base
 
-from google_auth.models.oidc_models import (
-    OIDCUser,
-    AccessToken,
-    RefreshToken,
-    RefreshToAccessTokenMapping
-)
+from common.auth.models.user import User
+from common.auth.models.token import Token
+from common.auth.models.auth_credentials import AuthCredentials
 from chat.models import (
     Chat, Message
 )

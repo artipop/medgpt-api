@@ -12,7 +12,7 @@ from settings import settings
 
 meta = sqlalchemy.MetaData()
 
-engine = create_async_engine(settings.db_url)
+engine = create_async_engine(settings.db_url, echo=True)
 
 async_session = sessionmaker(
     engine,
@@ -79,10 +79,15 @@ class AbstractRepository(ABC):
         query = select(self.model).filter_by(**kwargs)
         result = await self._session.execute(query)
         return result.scalars().all()
+    
+    async def get_one_by_filter(self, kwargs):
+        query = select(self.model).filter_by(**kwargs)
+        result = await self._session.execute(query)
+        return result.scalars().one_or_none()
 
     async def delete_by_value(self, field_name, value):
         field = getattr(self.model, field_name)
-        stmt = delete(self.model).where(field == value)
+        stmt = delete(self.model).where(field == value).returning(self.model)
         result = await self._session.execute(stmt)
-
-        return result.rowcount
+    
+        return result.scalars().all()

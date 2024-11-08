@@ -1,11 +1,29 @@
+import os.path
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import (
     Field,
+    BaseModel
 )
+
+base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+ACCESS_TOKEN_EXPIRE_MINUTES = 1
+REFRESH_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7
+
+
+class NativeAuthJWT(BaseModel):
+    private_key_path: Path = Path(os.path.join(base_path, "certs", "jwt-private.pem")) # TODO: refactor later
+    public_key_path: Path = Path(os.path.join(base_path, "certs", "jwt-public.pem"))
+    algorithm: str = "RS256"
+    access_token_expire_minutes: int = ACCESS_TOKEN_EXPIRE_MINUTES
+    refresh_token_expire_minutes: int = REFRESH_TOKEN_EXPIRE_MINUTES
+
 
 
 class Settings(BaseSettings):
     project_title: str = Field(alias="PROJECT_TITLE")
+    api_base_url: str = Field(alias="API_BASE_URL")
     
     fastapi_host: str = Field(alias="FASTAPI_HOST")
     fastapi_port: int = Field(alias="FASTAPI_PORT")
@@ -34,6 +52,7 @@ class Settings(BaseSettings):
     llm_api_login: str = Field(alias="LLM_API_LOGIN")
     llm_api_password: str = Field(alias="LLM_API_PASSWORD")
 
+    native_auth_jwt: NativeAuthJWT = NativeAuthJWT()
 
     @property
     def db_url(self) -> str:

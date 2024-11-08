@@ -11,9 +11,9 @@ class Chat(Base):
 
     id: Mapped[UUID] = mapped_column(UUID, primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(100), nullable=True)
-    owner_id: Mapped[UUID] = mapped_column(UUID, ForeignKey('oidc_users.id'))
+    owner_id: Mapped[UUID] = mapped_column(UUID, ForeignKey('users.id'))
 
-    owner = relationship('OIDCUser', back_populates='chats')
+    owner = relationship('User', back_populates='chats')
     messages = relationship('Message', back_populates='chat', cascade="all, delete-orphan")
 
 

@@ -13,10 +13,9 @@ from chat.message_repository import ChatRepository, MessageRepository
 from chat.models import Message, Chat
 from chat.schemas import ChatData, MessageData
 from database import get_session
-from google_auth.dependencies import authenticate
-from google_auth.models.oidc_repositories import OIDCRepository
+from common.auth.dependencies import authenticate
 from google_auth.schemas.oidc_user import UserInfoFromIDProvider
-
+from common.auth.schemas.user import UserRead
 router = APIRouter(
     prefix="/chat",
     tags=["chat"]
@@ -26,14 +25,12 @@ router = APIRouter(
 @router.get("/")
 async def get_chats(
         session: AsyncSession = Depends(get_session),
-        user_info: UserInfoFromIDProvider = Depends(authenticate)
+        user: UserRead = Depends(authenticate)
 ) -> List[ChatData]:
     """
     Get all chats available for authenticated user.
     """
     repository = ChatRepository(session)
-    user_repository = OIDCRepository(session)
-    user = await user_repository.get_existing_user(user_info)
     chats = await repository.get_by_filter({"owner_id": user.id})
     return [chat_mapping(chat) for chat in chats]
 
@@ -42,11 +39,9 @@ async def get_chats(
 async def new_chat(
         data: ChatData,
         session=Depends(get_session),
-        user_info=Depends(authenticate)
+        user=Depends(authenticate)
 ):
     repository = ChatRepository(session)
-    user_repository = OIDCRepository(session)
-    user = await user_repository.get_existing_user(user_info)
     chat = Chat(name=data.name, owner_id=user.id)
     await repository.create(chat)
     return ChatData(id=chat.id, name=chat.name)
@@ -56,14 +51,12 @@ async def new_chat(
 async def get_chat(
         chat_id: UUID,
         session: AsyncSession = Depends(get_session),
-        user_info=Depends(authenticate)
+        user=Depends(authenticate)
 ):
     repository = ChatRepository(session)
     chat = await repository.find_by_id(chat_id)
     if not chat:
         return Response(status_code=404)
-    user_repository = OIDCRepository(session)
-    user = await user_repository.get_existing_user(user_info)
     if chat.owner_id != user.id:
         return Response(status_code=403)
     msgs = [message_mapping(msg) for msg in chat.messages]
@@ -77,14 +70,12 @@ async def update_chat(
         chat_id: UUID,
         data: ChatData,
         session=Depends(get_session),
-        user_info=Depends(authenticate)
+        user=Depends(authenticate)
 ):
     repository = ChatRepository(session)
     chat = await repository.find_by_id(chat_id)
     if not chat:
         return Response(status_code=404)
-    user_repository = OIDCRepository(session)
-    user = await user_repository.get_existing_user(user_info)
     if chat.owner_id != user.id:
         return Response(status_code=403)
     if data and data.name != chat.name:
@@ -97,14 +88,12 @@ async def update_chat(
 async def delete_chat(
         chat_id: UUID,
         session=Depends(get_session),
-        user_info=Depends(authenticate)
+        user=Depends(authenticate)
 ):
     repository = ChatRepository(session)
     chat = await repository.find_by_id(chat_id)
     if not chat:
         return Response(status_code=404)
-    user_repository = OIDCRepository(session)
-    user = await user_repository.get_existing_user(user_info)
     if chat.owner_id != user.id:
         return Response(status_code=403)
     await repository.delete_by_id(chat_id)
