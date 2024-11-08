@@ -37,7 +37,7 @@ poetry.lock
 .env-example
 
 #alembic
-alembic/versions/*
+alembic/versions/*.pyc
 
 #native auth
 certs/
