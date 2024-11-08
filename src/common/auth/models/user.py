@@ -17,3 +17,4 @@ class User(Base):
     
     tokens = relationship("Token", back_populates="user")
     auth_credentials = relationship("AuthCredentials", back_populates="user")
+    chats = relationship("Chat", back_populates="owner")
