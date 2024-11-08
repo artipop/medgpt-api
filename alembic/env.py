@@ -16,7 +16,7 @@ from settings import settings
 from database import Base
 
 from common.auth.models.user import User
-from common.auth.models.refresh_token import RefreshToken
+from common.auth.models.token import Token
 from common.auth.models.auth_credentials import AuthCredentials
 from chat.models import (
     Chat, Message

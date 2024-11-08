@@ -58,8 +58,6 @@ from common.auth.services.auth_service import AuthService
 from common.auth.dependencies import preprocess_auth
 
 
-
-
 from pprint import pprint
 
 router = APIRouter(
@@ -107,7 +105,8 @@ async def auth_callback(
         
         await AuthService(session).get_or_create_oidc_user(
             user_data=user_data_from_id_token,
-            token_data=TokenFromIDProvider(token=refresh_token)
+            access_token_data=TokenFromIDProvider(token=access_token),
+            refresh_token_data=TokenFromIDProvider(token=refresh_token)
         )
 
         response = RedirectResponse(url="/docs") # TODO(weldonfe): change redirection route to actual frontend
@@ -124,43 +123,6 @@ async def auth_callback(
     except HTTPException as e:
         logger.warning(e)
         raise AuthException(detail="Not authenticated")
-
-
-@router.get("/logout")
-async def logout(
-    response: Response, 
-    request: Request,
-    session = Depends(get_session)
-):
-    """
-    does not werify user identity
-    revokes token from identity provider
-    deletes access_token from cookies
-    searches for corresponding refresh token in db and deletes both access and refresh
-    """
-    id_token, id_token_payload, auth_scheme = preprocess_auth(request=request)
-    
-    deleted_tokens = await AuthService(session).logout_oidc_user(
-        UserInfoFromIDProvider(
-            email=id_token_payload.get("email", "")
-        )
-    )
-
-    if deleted_tokens:
-        for token_data in deleted_tokens:
-            try:
-                await revoke_token(token_data.token)
-            except Exception as e: # token might be expired or allready revoked
-                pass
-    
-    response.delete_cookie(
-        key="session_id", 
-        httponly=True, 
-        secure=True
-    )
-    
-    #TODO(weldonfe): uncomment and change redirection route in row below 
-    # return RedirectResponse(url="/google-auth/login")
 
 
 # @router.get("/try_auth", response_model=OIDCUserRead)

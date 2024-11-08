@@ -3,8 +3,7 @@ from typing import Dict, Tuple
 from settings import settings
 
 from common.http_client import HttpClient
-from google_auth.exceptions import OpenIDConnectException
-
+from common.auth.exceptions import AuthException
 from pprint import pprint
 
 async def get_user_info_from_provider(token: str) -> Dict:
@@ -17,7 +16,7 @@ async def get_user_info_from_provider(token: str) -> Dict:
                                 headers=headers) as user_info_resp:
         
         if user_info_resp.status != 200:
-            raise OpenIDConnectException(detail="Failed to get token info")
+            raise AuthException(detail="Failed to get token info")
         
         user_info = await user_info_resp.json()
 
@@ -35,7 +34,7 @@ async def get_token_info(token: str):
                                 params=params) as token_info_resp:
         
         if token_info_resp.status != 200:
-            raise OpenIDConnectException(detail="Failed to get token info")
+            raise AuthException(detail="Failed to get token info")
         
         token_info_data = await token_info_resp.json()
 
@@ -62,7 +61,7 @@ async def exchage_code_to_tokens(code: str) -> Dict[str, str]:
                                  data=exchange_request_payload) as token_resp:
         print(token_resp.url)
         if token_resp.status != 200:
-            raise OpenIDConnectException(
+            raise AuthException(
                 detail="Failed to exchange code for token"
             )
         response_data = await token_resp.json()
@@ -89,7 +88,7 @@ async def get_new_tokens(refresh_token: str) -> Tuple[str]: # renewed access and
                                  data=refresh_request_payload) as refresh_resp:
         
         if refresh_resp.status != 200:
-            raise OpenIDConnectException(
+            raise AuthException(
                 detail="Failed to refresh access token"
             )
         
@@ -113,7 +112,7 @@ async def revoke_token(token: str):
         response_data = await refresh_resp.json()
         
         if refresh_resp.status != 200:
-            raise OpenIDConnectException(
+            raise AuthException(
                 detail=f"Failed to revoke token: {response_data}"
             )
     
@@ -128,7 +127,7 @@ async def get_certs():
     async with http_session.get(url=settings.google_certs_url) as certs_resp:
         
         if certs_resp.status != 200:
-            raise OpenIDConnectException(
+            raise AuthException(
                 detail="Failed to get relevant certs from identity provider"
             )
         

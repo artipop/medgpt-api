@@ -12,6 +12,8 @@ from google_auth.utils.id_provider_certs import IdentityProviderCerts
 # routers
 from native_auth.router import router as native_auth_router
 from google_auth.router import router as google_auth_router
+from common.auth.router import router as common_auth_router
+
 from chat.router import router as chat_router
 
 
@@ -43,6 +45,8 @@ app.add_middleware(
 app.include_router(native_auth_router)    
 app.include_router(google_auth_router)
 app.include_router(chat_router)
+app.include_router(common_auth_router)
+
 
 
 if __name__ == "__main__":
