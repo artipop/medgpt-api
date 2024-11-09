@@ -1,10 +1,8 @@
-from typing import List, Tuple
+from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, Result, Row
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
 from starlette.responses import Response
 from starlette.websockets import WebSocket
 
@@ -51,7 +49,7 @@ async def new_chat(
 async def get_chat(
         chat_id: UUID,
         session: AsyncSession = Depends(get_session),
-        user=Depends(authenticate)
+        user=Depends(authenticate),
 ):
     repository = ChatRepository(session)
     chat = await repository.find_by_id(chat_id)
@@ -96,7 +94,7 @@ async def delete_chat(
         return Response(status_code=404)
     if chat.owner_id != user.id:
         return Response(status_code=403)
-    await repository.delete_by_id(chat_id)
+    await repository.delete(chat)
 
 
 @router.websocket("/ws/{chat_id}")
@@ -111,6 +109,7 @@ async def websocket_endpoint(
     msg_repository = MessageRepository(session)
     client = ChatClient()
     chat = await chat_repository.find_by_id(chat_id)
+    # TODO: this doesn't work
     if not chat:
         return Response(status_code=404)
     # TODO: pass user data in WS and then it will work
@@ -122,14 +121,16 @@ async def websocket_endpoint(
         data = await websocket.receive_json()
         content = data["content"]
         # map `data` to ORM class and save it
-        message = Message(content=content, chat_id=chat_id)
+        message = Message(content=content, chat_id=chat_id, role='user')
         # save(user, chat_id, data)
         await msg_repository.create(message)
+        in_data = MessageData(id=message.id, content=message.content, role=message.role, references=[])
+        await websocket.send_json(in_data.model_dump_json())
         res = await client.send_message(content)
-        m = Message(content=res['message'], chat_id=chat_id)
+        m = Message(content=res['message'], chat_id=chat_id, role='agent')
         await msg_repository.create(m)
         # map `saved` to data class and send it
-        json_data = MessageData(id=m.id, content=m.content, references=[])
+        json_data = MessageData(id=m.id, content=m.content, role=m.role, references=[])
         await websocket.send_json(json_data.model_dump_json())
 
 
@@ -138,4 +139,4 @@ def chat_mapping(chat: Chat) -> ChatData:
 
 
 def message_mapping(message: Message) -> MessageData:
-    return MessageData(id=message.id, content=message.content, references=[])  # TODO: fix refs
+    return MessageData(id=message.id, content=message.content, role=message.role, references=[])  # TODO: fix refs

@@ -79,7 +79,7 @@ async def auth_callback(
                 status_code=401,
                 detail="No code transmitted from id provider"
             )
-        
+
         access_token, refresh_token, id_token = await exchage_code_to_tokens(code)
         user_data_from_id_token = await validate_id_token(id_token, access_token)
         
@@ -89,7 +89,7 @@ async def auth_callback(
             refresh_token_data=TokenFromIDProvider(token=refresh_token)
         )
 
-        response = RedirectResponse(url="/docs") # TODO(weldonfe): change redirection route to actual frontend
+        response = RedirectResponse(url="http://localhost:4200/chats") # TODO(weldonfe): change redirection route to actual frontend
         response.set_cookie(
             key="session_id",
             value=f"Bearer {id_token}",

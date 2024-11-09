@@ -14,6 +14,7 @@ class LiteratureReferenceData(BaseModel):
 class MessageData(BaseModel):
     id: UUID
     content: str
+    role: str | None = None  # todo: delete later
     references: List[LiteratureReferenceData]  # optional
 
 class ChatData(BaseModel):
