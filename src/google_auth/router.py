@@ -89,7 +89,7 @@ async def auth_callback(
             refresh_token_data=TokenFromIDProvider(token=refresh_token)
         )
 
-        response = RedirectResponse(url="http://localhost:4200/chats") # TODO(weldonfe): change redirection route to actual frontend
+        response = RedirectResponse(url=settings.post_login_redirect_uri) # TODO(weldonfe): change redirection route to actual frontend
         response.set_cookie(
             key="session_id",
             value=f"Bearer {id_token}",

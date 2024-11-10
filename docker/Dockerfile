@@ -21,6 +21,6 @@ RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 COPY ./src /code/
 COPY ./alembic.ini /code/
 COPY ./alembic /code/alembic/
-COPY ./certs /code/certs/
+COPY ./certs /certs/
 
 CMD ["python", "main.py"]
