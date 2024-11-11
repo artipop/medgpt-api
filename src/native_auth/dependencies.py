@@ -33,7 +33,7 @@ async def authenticate(id_token: str, response: Response, session=Depends(get_se
             key="session_id",
             value=f"Bearer {id_token}",
             httponly=True,  # to prevent JavaScript access
-            secure=True,
+            # secure=True,
         )
 
     validate_token_type(payload=payload, token_type=TokenType.ID)

@@ -36,7 +36,7 @@ async def authenticate(
             key="session_id",
             value=f"Bearer {id_token}",
             httponly=True,  # to prevent JavaScript access
-            secure=True,
+            # secure=True,
         )
     
     else:
