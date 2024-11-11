@@ -30,7 +30,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=settings.project_title,
-    lifespan=lifespan
+    lifespan=lifespan,
+    root_path='/api'
 )
 
 allowed_hosts = ["*"]
@@ -55,6 +56,7 @@ if __name__ == "__main__":
         app="main:app", 
         host=settings.fastapi_host,
         port=settings.fastapi_port,
-        reload=True
+        reload=True,
+        proxy_headers=True
     )
 

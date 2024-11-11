@@ -1,6 +1,6 @@
 services:
   app:
-    image: medgpt-fe:0.5
+    image: medgpt-fe:0.1
     ports:
       - "4200:80"
     labels:
@@ -39,8 +39,10 @@ services:
       - "--api.insecure=true"
       - "--providers.docker=true"
       - "--entrypoints.web.address=:80"
+      - "--api.dashboard=true"
     ports:
       - "80:80"
+      - "8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
 
