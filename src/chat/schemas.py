@@ -1,0 +1,22 @@
+from pydantic import BaseModel, Field
+from uuid import UUID
+from typing import Optional, List
+
+from sqlalchemy import String
+
+
+class SourceData(BaseModel):
+    id: UUID | None = None
+    title: str
+    extended_title: str | None = None
+
+class MessageData(BaseModel):
+    id: UUID
+    content: str
+    role: str | None = None  # todo: delete later
+    sources: List[SourceData]  # optional
+
+class ChatData(BaseModel):
+    id: UUID | None = None
+    name: str
+    messages: List[MessageData] | None = None
