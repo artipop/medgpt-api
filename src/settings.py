@@ -66,7 +66,7 @@ class Settings(BaseSettings):
     @property
     def db_url(self) -> str:
         scheme = "postgresql+asyncpg" 
-        return (
+        url = (
             f"{scheme}://"
             f"{self.postgres_user}:"
             f"{self.postgres_password}@"
@@ -74,6 +74,8 @@ class Settings(BaseSettings):
             f"{self.postgres_port}/"
             f"{self.postgres_db}"
         )
+        print(url)
+        return url
     
     model_config = SettingsConfigDict(
         env_file=".env"

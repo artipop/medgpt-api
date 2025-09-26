@@ -1,20 +1,24 @@
 import asyncio
+import os
+import shutil
 from typing import List
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from sqlalchemy import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import Response
 from starlette.websockets import WebSocket
 
+from settings import settings
 from chat.chat_client import ChatClient
 from chat.message_repository import ChatRepository, MessageRepository
-from chat.models import Message, Chat, Source
+from chat.models import Message, Chat, Source, UploadedFile
 from chat.schemas import ChatData, MessageData, SourceData
 from database import get_session
 from common.auth.dependencies import authenticate
 from common.auth.schemas.user import UserRead
-
+from chat.repos import UploadedFilesRepository
 router = APIRouter(
     prefix="/chat",
     tags=["chat"]
@@ -99,12 +103,41 @@ async def delete_chat(
 
 
 @router.post("/uploadfile")
-async def upload_file(
-        file: UploadFile,
-):
-    client = ChatClient()
-    content: bytes = await file.read()
-    await client.send_file(content, file.filename, file.content_type)
+async def upload_file(file: UploadFile = File(...), session=Depends(get_session), user: UserRead = Depends(authenticate)):
+
+    if not file.content_type.endswith(('pdf', 'docx', 'doc')):
+        raise HTTPException(
+            status_code=400,
+            detail="Неподдерживаемый файл"
+        )
+
+
+    # file saving
+    path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        'static_files',
+        file.filename
+    )
+    with open(path, 'wb') as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    db_path = f"{settings.api_base_url}/api/uploaded/{file.filename}"
+
+    repository = UploadedFilesRepository(session) 
+    query = (
+        insert(UploadedFile)
+        .values(
+            sender_id=user.id,
+            file_path=db_path
+        )
+        .returning(UploadedFile)
+    )
+    result = await session.execute(query)
+    await session.commit()
+
+    # client = ChatClient()
+    # content: bytes = await file.read()
+    # await client.send_file(content, file.filename, file.content_type)
 
 
 @router.websocket("/ws/{chat_id}")

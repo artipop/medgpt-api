@@ -1,6 +1,6 @@
-from common.singleton import singleton
-from common.auth.exceptions import AuthException
-from google_auth.utils.requests import get_certs
+from .singleton import singleton
+from .auth_exception import AuthException
+from .requests import get_certs
 
 
 @singleton

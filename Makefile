@@ -1,11 +1,18 @@
 install:
 	poetry install
 
-dev: install
-	docker compose -f docker/docker-compose-dev.yml --project-directory . up --build -d
+dev:
+	docker-compose -f docker/docker-compose-dev.yml --env-file .env --project-directory . up --build -d
+	poetry run python3 src/main.py
 
-revision:
+start:
+	poetry run uvicorn src.main:app --host 0.0.0.0 --reload
+
+rev:
 	poetry run alembic revision --autogenerate
 
-run_migrations:
+mig:
 	poetry run alembic upgrade head
+	 
+kill:
+	taskkill /f /im python.exe

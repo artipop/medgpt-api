@@ -12,16 +12,16 @@ from alembic import context
 # NOTE(weldonfe): Ugly crutch to fix python import issues
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 
-from settings import settings
-from database import Base
+from src.settings import settings
+from src.database import Base
 
-from common.auth.models.user import User
-from common.auth.models.token import Token
-from common.auth.models.auth_credentials import AuthCredentials
-from chat.models import (
+from src.common.auth.models.user import User
+from src.common.auth.models.token import Token
+from src.common.auth.models.auth_credentials import AuthCredentials
+from src.chat.models import (
     Chat, Message
 )
-from subs.models import Subscription
+from src.subs.models import Subscription
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

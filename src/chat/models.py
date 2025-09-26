@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, ForeignKey, Text, UUID, TIMESTAMP
+from sqlalchemy import Column, DateTime, Integer, String, ForeignKey, Text, UUID, TIMESTAMP, func
 from sqlalchemy.orm import relationship, mapped_column, Mapped
 
 from database import Base
@@ -18,6 +18,21 @@ class Chat(Base):
     messages = relationship('Message', back_populates='chat', cascade="all, delete-orphan",
                             order_by='Message.created_at')
 
+class FileStatus(Base):
+    __tablename__ = 'file_status'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    status: Mapped[str] = mapped_column(String(100))
+    uploaded_files: Mapped["UploadedFile"] = relationship("UploadedFile", back_populates="file_status")
+
+class UploadedFile(Base):
+    __tablename__ = 'uploaded_files'
+    id: Mapped[UUID] = mapped_column(UUID, primary_key=True, default=uuid.uuid4)
+    sender_id: Mapped[UUID] = mapped_column(UUID, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    uploaded_at: Mapped[TIMESTAMP] = mapped_column(TIMESTAMP, default=datetime.now, nullable=True)
+    file_path: Mapped[str]
+    file_status_id: Mapped[int] = mapped_column(ForeignKey('file_status.id'), default=1)
+    
+    file_status: Mapped["FileStatus"] = relationship("FileStatus", back_populates="uploaded_files")
 
 class Message(Base):
     __tablename__ = 'messages'

@@ -1,6 +1,6 @@
 import aiohttp
-from common.logger import logger
-from common.singleton import singleton
+from .logger import logger
+from .singleton import singleton
 
 @singleton
 class HttpClient:
