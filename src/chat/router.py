@@ -19,6 +19,8 @@ from database import get_session
 from common.auth.dependencies import authenticate
 from common.auth.schemas.user import UserRead
 from chat.repos import UploadedFilesRepository
+
+
 router = APIRouter(
     prefix="/chat",
     tags=["chat"]
@@ -105,7 +107,7 @@ async def delete_chat(
 @router.post("/uploadfile")
 async def upload_file(file: UploadFile = File(...), session=Depends(get_session), user: UserRead = Depends(authenticate)):
 
-    if not file.content_type.endswith(('pdf', 'docx', 'doc')):
+    if not file.filename.endswith(('pdf', 'docx', 'doc')):
         raise HTTPException(
             status_code=400,
             detail="Неподдерживаемый файл"
